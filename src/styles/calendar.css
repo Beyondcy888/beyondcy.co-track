@@ -1,0 +1,298 @@
+/* Calendar: hairlines, not boxes. Today's number gets a ring in --text. */
+
+.cal-section {
+  margin-bottom: 24px;
+}
+
+.cal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 28px;
+  align-items: start;
+}
+
+.cal {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.cal th {
+  padding: 0 8px 10px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-align: left;
+}
+
+.cal td {
+  position: relative; /* the add button covers the whole cell, however tall */
+  height: 118px;
+  padding: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.cal td:first-child {
+  border-left: 0;
+}
+
+.cal-day.is-out .cal-num {
+  display: block;
+  padding: 8px 8px 0;
+  color: color-mix(in srgb, var(--text-dim) 45%, transparent);
+}
+
+.cal-cell {
+  min-height: 118px;
+  padding: 36px 6px 8px;
+}
+
+/* the whole empty area of a day is the "new content on this day" button */
+.cal-add {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 7px 8px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  cursor: copy;
+  transition: background-color 0.15s;
+}
+
+.cal-add:hover,
+.cal-add:focus-visible {
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+}
+
+.cal-add:focus-visible {
+  outline-offset: -2px;
+}
+
+.cal-add-hint {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cal-add:hover .cal-add-hint,
+.cal-add:focus-visible .cal-add-hint {
+  opacity: 1;
+}
+
+.cal-num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: var(--fs-sm);
+}
+
+.is-today .cal-num {
+  box-shadow: inset 0 0 0 1.5px var(--text);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cal-chips {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  pointer-events: none;
+}
+
+.cal-chips > li > * {
+  pointer-events: auto;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  text-align: left;
+}
+
+.chip:hover {
+  background: var(--raised-hi);
+}
+
+.chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-brand {
+  color: var(--text-dim);
+}
+
+/* an item without a type yet: a hollow slot where the type icon goes */
+.chip-notype {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1px dashed var(--text-dim);
+  border-radius: 2px;
+}
+
+/* the dashboard's all-brands calendar: day numbers are labels, not buttons */
+.cal-num--static {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+}
+
+.cal--readonly .cal-cell {
+  position: relative;
+}
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.cal-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-more {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.cal-more:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+
+/* No date list */
+.nodate {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+}
+
+.nodate-title {
+  margin-bottom: 10px;
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.nodate-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.nodate-empty {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+/* day popover */
+.day-pop-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 0 4px 6px;
+}
+
+.day-pop-empty {
+  padding: 0 8px 8px;
+  color: var(--text-dim);
+}
+
+.day-pop-new {
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-control) var(--r-control);
+  color: var(--accent);
+}
+
+/* compact (phones): dots only, tap a day for its list */
+.cal--compact td {
+  height: 58px;
+}
+
+.cal--compact th {
+  padding: 0 0 8px;
+  text-align: center;
+}
+
+.cal--compact .cal-day.is-out .cal-num {
+  padding: 6px 0 0;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.cal-tap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: 58px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: var(--text);
+}
+
+.cal-tap:hover {
+  background: var(--raised);
+}
+
+.cal-marks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+
+.cal-plus {
+  color: var(--text-dim);
+  font-size: 0.625rem;
+}
+
+@media (max-width: 1100px) {
+  .cal-layout {
+    grid-template-columns: 1fr;
+  }
+}

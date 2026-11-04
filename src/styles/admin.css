@@ -1,0 +1,206 @@
+/* Admin: Choose a tracker (rows, not a grid of cards) and People. */
+
+.choose-list {
+  border-top: 1px solid var(--line);
+}
+
+.choose-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(0, 0.9fr) minmax(260px, 1.4fr) 20px;
+  align-items: center;
+  gap: 12px 28px;
+  padding: 20px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.choose-row:hover {
+  background: color-mix(in srgb, var(--raised) 55%, transparent);
+  color: var(--text);
+}
+
+.choose-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.choose-title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.choose-people,
+.choose-brands {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.choose-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.choose-numbers {
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 9.5em;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.choose-pct {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.choose-pct.is-over {
+  color: var(--accent);
+}
+
+.choose-pace {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.choose-chev {
+  color: var(--text-dim);
+}
+
+.choose-note {
+  margin-top: 18px;
+  color: var(--text-dim);
+}
+
+/* mini track: a thin segmented line */
+.mini {
+  position: relative;
+  display: flex;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--dot-empty);
+  overflow: visible;
+}
+
+.mini > span:first-child {
+  border-radius: var(--r-pill) 0 0 var(--r-pill);
+}
+
+.mini-up {
+  background: var(--status-uploaded);
+  border-radius: var(--r-pill) 0 0 var(--r-pill);
+}
+
+.mini-pl {
+  background: repeating-linear-gradient(90deg, var(--status-planned) 0 2px, transparent 2px 4px);
+}
+
+.mini-bonus {
+  background: var(--status-uploaded);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.mini-tick {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.mini--none {
+  background: none;
+  border: 1px dashed var(--line);
+}
+
+/* People */
+.people-intro {
+  display: grid;
+  gap: 6px;
+  max-width: 760px;
+  margin-bottom: 20px;
+  line-height: 1.55;
+}
+
+.people-needs {
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.people-wrap {
+  max-height: none;
+}
+
+.people-table td {
+  height: 56px;
+}
+
+.people-table tbody tr:hover td {
+  background: transparent;
+}
+
+.people-name {
+  min-height: 34px;
+  padding: 4px 10px;
+  background: transparent;
+}
+
+.people-name:hover {
+  background: var(--raised);
+}
+
+.people-role {
+  min-height: 34px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.people-role.needs-role {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.people-you {
+  margin-left: 8px;
+}
+
+.people-table td:nth-child(2) {
+  display: table-cell;
+}
+
+.people-table td:nth-child(2) .cell-text {
+  display: inline-block;
+  max-width: calc(100% - 52px);
+  vertical-align: middle;
+}
+
+.people-table .is-inactive td {
+  color: var(--text-dim);
+}
+
+@media (max-width: 1100px) {
+  .choose-row {
+    grid-template-columns: minmax(0, 1fr) 20px;
+  }
+
+  .choose-brands {
+    display: none;
+  }
+
+  .choose-progress {
+    grid-column: 1;
+  }
+
+  .choose-chev {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}

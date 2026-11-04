@@ -1,0 +1,83 @@
+/* Beyondcy tracker design tokens (03_DESIGN_SYSTEM.md §2, updated by 09_UPDATE_V2.md §2). Dark only. */
+:root {
+  color-scheme: dark;
+
+  /* colour */
+  --ink: #131218;          /* page background */
+  --panel: #1b1a21;        /* sidebar, table surface, drawer */
+  --raised: #25242d;       /* hovered rows, active nav pill, inputs */
+  --raised-hi: #2d2c37;    /* hover on raised controls */
+  --line: #2f2e39;         /* hairlines and borders */
+  --text: #eeecf4;
+  --text-dim: #9a96ab;
+
+  /* brand: Beyondcy green (from the logo) */
+  --accent: #9ecd59;       /* primary buttons, focus ring, active nav marker, links, toggles */
+  --accent-hi: #b6db80;    /* hover on green buttons */
+  --accent-ink: #131218;   /* text and icons on green */
+
+  /* status: Uploaded is the brand green on purpose (green = done) */
+  --status-not-started: #6f6c7d;
+  --status-planned: #4d8dff;
+  --status-uploaded: #9ecd59;
+  --status-not-started-light: #cdcad9;
+  --status-planned-light: #abc9ff;
+  --status-uploaded-light: #d2e9b0;
+
+  /* content type: always with its icon (▶ Reels, 2×2 grid Feed), never colour alone */
+  --type-reels: #ff8a3d;
+  --type-reels-light: #ffc6a1;
+  --type-feed: #8f7cf7;
+  --type-feed-light: #c9bfff;
+
+  --danger: #ff6b6b;
+  --danger-light: #ffb4b4;
+  --dot-dim: #2f3a26;      /* dim green: the dot-grid motif */
+  --dot-empty: #4b4959;    /* a remaining slot on the track */
+
+  /* type */
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "Martian Mono", ui-monospace, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-body: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-greet: 1.75rem;
+  --fs-num: 3.5rem;
+  --fs-headline: clamp(3.5rem, 6vw, 6rem); /* the progress module's big number (Martian Mono 700) */
+
+  /* shape: a hierarchy, not one radius everywhere */
+  --r-shell: 20px;
+  --r-panel: 14px;
+  --r-control: 10px;
+  --r-pill: 999px;
+
+  /* space */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* layout: the main column fills everything beside the sidebar (no max width) */
+  --sidebar-w: 248px;
+  --rail-w: 72px;
+  --pad-x: 32px;           /* main column side padding: 24px under 1100px, 16px under 720px */
+  --drawer-w: 560px;
+  --motion: 200ms;
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --pad-x: 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --pad-x: 16px;
+  }
+}

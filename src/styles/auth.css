@@ -1,0 +1,222 @@
+/* Login / reset (reference 2): black dot field left, dark form right with underline inputs. */
+
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--panel);
+}
+
+.auth-art {
+  position: relative;
+  overflow: hidden;
+  background: #0b0a0f;
+}
+
+.dotfield {
+  --gap: 30px;
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at center, var(--dot-dim) 1.7px, transparent 2.3px);
+  background-size: var(--gap) var(--gap);
+  background-position: 0 0;
+}
+
+.df {
+  position: absolute;
+  left: calc(var(--x) * var(--gap) + var(--gap) / 2 - 5px);
+  top: calc(var(--y) * var(--gap) + var(--gap) / 2 - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.df-u {
+  background: var(--status-uploaded);
+}
+
+.df-p {
+  box-shadow: inset 0 0 0 2px var(--status-planned);
+}
+
+.df-n {
+  width: 6px;
+  height: 6px;
+  margin: 2px;
+  background: var(--status-not-started);
+}
+
+.df-v {
+  background: var(--accent);
+}
+
+.auth-panel {
+  display: flex;
+  align-items: center;
+  padding: var(--s7) clamp(24px, 6vw, 96px);
+}
+
+.auth-inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-form {
+  margin-top: 56px;
+}
+
+.auth-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.auth-text {
+  margin-top: 10px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.auth-text strong {
+  color: var(--text);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* underline inputs */
+.uline {
+  margin-top: 28px;
+}
+
+.uline label {
+  display: block;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.uline-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  transition: border-color 0.15s;
+}
+
+.uline input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 0 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-md);
+  transition: border-color 0.15s;
+}
+
+.uline-row input {
+  border-bottom: 0;
+}
+
+.uline input::placeholder {
+  color: color-mix(in srgb, var(--text-dim) 60%, transparent);
+}
+
+.uline input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.uline-row:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+.uline input:focus-visible {
+  outline: none;
+}
+
+.uline-toggle {
+  flex: none;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.uline-toggle:hover {
+  color: var(--text);
+}
+
+.auth-error {
+  margin-top: 18px;
+  color: var(--danger-light);
+  line-height: 1.45;
+}
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-top: 32px;
+}
+
+.auth-link {
+  color: var(--text-dim);
+  text-decoration-color: color-mix(in srgb, var(--text-dim) 50%, transparent);
+}
+
+.auth-submit {
+  min-width: 120px;
+  min-height: 44px;
+  padding: 0 28px;
+}
+
+/* blocked account screen */
+.blocked {
+  max-width: 420px;
+}
+
+.blocked-message {
+  margin-top: 40px;
+  font-size: var(--fs-lg);
+  line-height: 1.45;
+}
+
+.blocked-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+.no-access-link {
+  margin-top: 6px;
+}
+
+@media (max-width: 860px) {
+  .auth {
+    grid-template-columns: 1fr;
+    grid-template-rows: 132px 1fr;
+  }
+
+  .auth-panel {
+    align-items: flex-start;
+    padding: 36px 20px 48px;
+  }
+
+  .auth-form {
+    margin-top: 40px;
+  }
+}
+
+/* the logo sits above the form (dark panel only: white "cy" and ring) */
+.auth-logo {
+  margin-bottom: 4px;
+}
+
+.blocked .logo {
+  margin-bottom: 4px;
+}

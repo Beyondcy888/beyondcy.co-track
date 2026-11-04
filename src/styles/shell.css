@@ -1,0 +1,544 @@
+/* App shell: sidebar on --panel, the page on an --ink surface with the 20px shell radius.
+   The main column fills all the space beside the sidebar (no max width; 09 §3).
+   The sidebar is pinned, hidden, or peeking over the content (09 §4); it moves by transform only. */
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+.app {
+  --main-left: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--panel);
+}
+
+.app-main {
+  min-width: 0;
+  height: calc(100vh - 16px);
+  margin: 8px 8px 8px var(--main-left);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-shell);
+  background: var(--ink);
+  scrollbar-gutter: stable;
+}
+
+.app-main:focus {
+  outline: none;
+}
+
+.app-content {
+  padding: 0 var(--pad-x) 72px;
+}
+
+/* ------------------------------------------------------------ sidebar */
+.topbar {
+  display: none;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  padding: 18px 14px 16px;
+  overflow-y: auto;
+  background: var(--panel);
+  transition: transform var(--motion) ease;
+}
+
+.peek-zone {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 44;
+  width: 12px;
+}
+
+@media (min-width: 721px) {
+  .app[data-sidebar="hidden"] {
+    --main-left: 8px;
+  }
+
+  /* hidden: slid out to the left, and not focusable (it is also inert) */
+  .app[data-sidebar="hidden"] .sidebar:not([data-peek="true"]) {
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--motion) ease, visibility 0s linear var(--motion);
+  }
+
+  /* peek: a floating overlay above the content; the layout does not shift */
+  .sidebar[data-peek="true"] {
+    top: 8px;
+    bottom: 8px;
+    z-index: 45;
+    border: 1px solid var(--line);
+    border-left: 0;
+    border-radius: 0 var(--r-panel) var(--r-panel) 0;
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.55);
+  }
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 0 22px 10px;
+}
+
+.sidebar-mark {
+  display: inline-flex;
+  padding: 2px 0;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.sidebar-logo-mark {
+  display: none;
+}
+
+.sidebar-toggle {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-right: -4px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-section {
+  margin: 18px 10px 6px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.nav-section:first-child {
+  margin-top: 0;
+}
+
+.nav-sep {
+  display: block;
+  height: 1px;
+  margin: 14px 10px 10px;
+  background: var(--line);
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: var(--r-control);
+  color: var(--text-dim);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.nav-item:hover {
+  background: color-mix(in srgb, var(--raised) 60%, transparent);
+  color: var(--text);
+}
+
+.nav-item[aria-current="page"] {
+  background: var(--raised);
+  color: var(--text);
+}
+
+/* the 2px green marker on the active pill */
+.nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.nav-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-initial {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot-empty);
+}
+
+.nav-dot.is-active {
+  background: var(--accent);
+}
+
+.nav-tracker.is-open {
+  color: var(--text);
+}
+
+.nav-sub {
+  margin: 2px 0 6px 20px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+
+.nav-rail {
+  display: none;
+}
+
+.sidebar-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.who-name {
+  font-weight: 500;
+}
+
+.who-role {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.who-signout {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.rail-signout {
+  display: none;
+}
+
+.sidebar-scrim {
+  display: none;
+}
+
+/* ------------------------------------------------------------ page header */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3) var(--s5);
+  margin: 0 calc(var(--pad-x) * -1);
+  padding: 16px var(--pad-x) 14px;
+  background: var(--ink);
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 36px;
+  font-size: var(--fs-md);
+}
+
+.page-title h1 {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.page-reveal {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px 0 -8px;
+}
+
+.page-reveal-mark {
+  display: inline-flex;
+  border-radius: 6px;
+}
+
+.page-crumb {
+  color: var(--text-dim);
+  font-weight: 500;
+  max-width: 32ch;
+}
+
+.page-sep {
+  color: var(--text-dim);
+}
+
+.page-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+}
+
+.month-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.month-label {
+  min-width: 9.5em;
+  text-align: center;
+  font-weight: 500;
+}
+
+.month-switcher .btn {
+  margin-left: var(--s2);
+}
+
+.clock {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.page-top {
+  position: relative;
+}
+
+.greeting {
+  margin: 10px 0 28px;
+  font-size: var(--fs-greet);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+/* ------------------------------------------------------------ icon rail (721–1100px, pinned) */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .app[data-sidebar="pinned"] {
+    --main-left: var(--rail-w);
+  }
+
+  .app[data-sidebar="pinned"] .sidebar {
+    width: var(--rail-w);
+    align-items: center;
+    padding: 16px 10px 14px;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-head {
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 0 18px;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-logo {
+    display: none;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-logo-mark {
+    display: block;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-toggle {
+    margin: 0;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-nav .nav-wide,
+  .app[data-sidebar="pinned"] .who,
+  .app[data-sidebar="pinned"] .nav-section {
+    display: none;
+  }
+
+  .app[data-sidebar="pinned"] .nav-rail {
+    display: block;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-nav {
+    align-items: center;
+    width: 100%;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-nav ul {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .app[data-sidebar="pinned"] .nav-sep {
+    width: 32px;
+    margin: 10px auto;
+  }
+
+  .app[data-sidebar="pinned"] .nav-item {
+    justify-content: center;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .app[data-sidebar="pinned"] .nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .app[data-sidebar="pinned"] .nav-item[aria-current="page"]::before {
+    left: -8px;
+  }
+
+  .app[data-sidebar="pinned"] .sidebar-foot {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0 0;
+  }
+
+  .app[data-sidebar="pinned"] .rail-signout {
+    display: inline-grid;
+  }
+}
+
+/* ------------------------------------------------------------ phones: top bar + overlay drawer (≤720px) */
+@media (max-width: 720px) {
+  .app {
+    background: var(--ink);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 8px 0 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .topbar-mark {
+    display: inline-flex;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+
+  .sidebar {
+    z-index: 50;
+    width: min(300px, 86vw);
+    border-right: 1px solid var(--line);
+    transform: translateX(-102%);
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  }
+
+  .sidebar[data-open="true"] {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.22s ease;
+  }
+
+  .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgb(8 8 12 / 0.6);
+  }
+
+  .app-main {
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    scrollbar-gutter: auto;
+  }
+
+  .page-header {
+    position: static;
+    padding-top: 14px;
+  }
+
+  .page-tools {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .month-label {
+    min-width: 8.5em;
+  }
+
+  .greeting {
+    margin: 6px 0 22px;
+    font-size: 1.5rem;
+  }
+}
+
+/* reduced motion: the sidebar appears and disappears without sliding */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar[data-open="true"] {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,165 @@
+/* Tracker banner (09 §5): edge to edge of the main column, above the greeting.
+   Designed for 1500 × 600; height = min(width × 0.4, 40vh), at least 160px. */
+
+.banner {
+  position: relative;
+  /* a definite width: with an auto width, max-height would shrink the box to keep 5:2 */
+  width: calc(100% + 2 * var(--pad-x));
+  aspect-ratio: 5 / 2;
+  max-height: 40vh;
+  min-height: 160px;
+  margin: 0 calc(var(--pad-x) * -1);
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.banner-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.banner-loading {
+  background: linear-gradient(100deg, var(--panel) 30%, var(--raised) 50%, var(--panel) 70%) 0 0 / 300% 100%;
+  animation: banner-shimmer 1.4s linear infinite;
+}
+
+@keyframes banner-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+
+.banner.is-repositioning .banner-img {
+  cursor: grab;
+  touch-action: none;
+}
+
+.banner.is-repositioning .banner-img:active {
+  cursor: grabbing;
+}
+
+.banner-img:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+
+/* hover shows Change banner · Reposition · Remove */
+.banner-actions {
+  position: absolute;
+  right: calc(var(--pad-x) - 8px);
+  bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.banner:hover .banner-actions,
+.banner:focus-within .banner-actions,
+.banner-actions.is-visible {
+  opacity: 1;
+}
+
+.banner-btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: rgb(19 18 24 / 0.78);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  backdrop-filter: blur(6px);
+}
+
+.banner-btn:hover:not(:disabled) {
+  background: rgb(19 18 24 / 0.94);
+}
+
+.banner-btn:disabled {
+  opacity: 0.6;
+}
+
+.banner-btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.banner-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hi);
+}
+
+.banner-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: rgb(19 18 24 / 0.72);
+  font-size: var(--fs-sm);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.banner-busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 10px;
+  background: rgb(19 18 24 / 0.55);
+  font-size: var(--fs-sm);
+}
+
+/* no banner: a quiet "Add banner" revealed by hovering the top of the page */
+.banner-add-row {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.page-top:hover .banner-add-row,
+.banner-add-row:focus-within {
+  opacity: 1;
+}
+
+.banner-add-hint {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.page-top:has(> .banner) .greeting {
+  margin-top: 20px;
+}
+
+@media (hover: none) {
+  /* touch: there's no hover; Add banner lives in the "⋯" menu */
+  .banner-add-row {
+    display: none;
+  }
+
+  .banner-actions {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .banner-add-hint {
+    display: none;
+  }
+}

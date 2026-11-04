@@ -1,0 +1,291 @@
+/* Logo, type pieces, avatar initial, toasts, popovers, confirm dialog, empty/error states. */
+
+/* the logo is made for dark surfaces only (white "cy" and ring) */
+.logo,
+.logo-mark {
+  display: block;
+  flex: none;
+  max-width: none;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------ content type: icon + colour */
+.type-icon {
+  flex: none;
+  display: inline-block;
+  vertical-align: -1px;
+}
+
+.type-icon--reels {
+  color: var(--type-reels);
+}
+
+.type-icon--feed {
+  color: var(--type-feed);
+}
+
+.type-pill {
+  --hue: var(--type-feed);
+  --hue-light: var(--type-feed-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--hue) 15%, transparent);
+  color: var(--hue-light);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.type-pill--reels {
+  --hue: var(--type-reels);
+  --hue-light: var(--type-reels-light);
+}
+
+.type-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+
+.tc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tc--reels .mono {
+  color: var(--type-reels-light);
+}
+
+.tc--feed .mono {
+  color: var(--type-feed-light);
+}
+
+.tc-of {
+  color: var(--text-dim);
+}
+
+/* a problem to fix (not orange: orange means Reels) */
+.badge-warn {
+  color: var(--danger-light);
+  background: color-mix(in srgb, var(--danger) 13%, transparent);
+}
+
+.badge-warn svg {
+  flex: none;
+}
+
+.initial {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--text);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+/* ------------------------------------------------------------ toasts */
+.toasts {
+  /* reset popover UA styles */
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  color: inherit;
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast {
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast-danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger-light);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ------------------------------------------------------------ popover */
+.popover {
+  position: fixed;
+  z-index: 60;
+  max-height: min(420px, calc(100vh - 16px));
+  overflow: auto;
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--panel);
+}
+
+.popover-title {
+  padding: 6px 8px 8px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--text);
+  font-size: var(--fs-body);
+  text-align: left;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--raised);
+}
+
+.menu-item .dim {
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------ confirm dialog */
+.confirm {
+  width: min(420px, calc(100vw - 32px));
+  padding: var(--s5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.confirm::backdrop {
+  background: rgb(8 8 12 / 0.6);
+}
+
+.confirm-title {
+  font-size: var(--fs-lg);
+}
+
+.confirm-body {
+  margin-top: var(--s2);
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+/* ------------------------------------------------------------ states */
+.empty {
+  padding: var(--s6) var(--s5);
+  color: var(--text-dim);
+  text-align: left;
+}
+
+.empty strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--panel);
+  color: var(--text-dim);
+}
+
+.notice-danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+  color: var(--danger-light);
+}
+
+.loading-block {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s6) 0;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------ New content: Brand + PIC (Admin in Behomy) */
+.new-form {
+  display: grid;
+  gap: 10px;
+  padding: 0 6px 4px;
+}
+
+.new-form .popover-title {
+  padding: 6px 2px 0;
+}
+
+.new-field {
+  display: grid;
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.new-hint {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+
+.new-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.popover .menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

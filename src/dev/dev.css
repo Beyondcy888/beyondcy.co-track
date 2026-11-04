@@ -1,0 +1,48 @@
+/* DEV ONLY styles (mock bar, connection check). Loaded only by dev-only modules. */
+.mock-bar {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border: 1px dashed var(--accent);
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+}
+
+.mock-bar select {
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  padding: 2px 8px;
+}
+
+.devcheck {
+  width: min(720px, 100%);
+}
+
+.devcheck-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.devcheck-list li {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  overflow-wrap: anywhere;
+}
+
+.devcheck-list .ok strong {
+  color: var(--status-uploaded);
+}
+
+.devcheck-list .fail strong {
+  color: var(--danger);
+}

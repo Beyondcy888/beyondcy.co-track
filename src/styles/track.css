@@ -1,0 +1,594 @@
+/* The track v2 (09 §8): one wide, low band (not a card), hairlines above and below.
+   Top: the big number · the Reels/Feed ring · words (pace, legend, mix note). Below: the dots. */
+
+.track {
+  margin: 0 0 44px;
+  padding: 26px 0 24px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.track-top {
+  display: grid;
+  grid-template-columns: minmax(240px, auto) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px 48px;
+}
+
+/* ------------------------------------------------------------ headline: Martian Mono 700 */
+.hl-num {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font-size: var(--fs-headline);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+}
+
+.hl-up {
+  color: var(--text);
+}
+
+.hl-of {
+  color: var(--text-dim);
+}
+
+.hl-sep {
+  margin: 0 0.04em 0 0.1em;
+  font-weight: 400;
+}
+
+.hl-pct {
+  margin-left: 0.3em;
+  font-size: 0.4em;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.hl-pct.is-over {
+  color: var(--accent);
+}
+
+.hl-dot {
+  margin-right: 0.3em;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.hl-caption {
+  margin-top: 14px;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------ the ring (outer Reels, inner Feed) */
+.ring {
+  position: relative;
+  flex: none;
+}
+
+.ring svg {
+  display: block;
+  overflow: visible;
+}
+
+.ring-track,
+.ring-arc {
+  fill: none;
+  stroke-width: 13;
+}
+
+.ring-reels .ring-track {
+  stroke: color-mix(in srgb, var(--type-reels) 16%, transparent);
+}
+
+.ring-feed .ring-track {
+  stroke: color-mix(in srgb, var(--type-feed) 20%, transparent);
+}
+
+/* a type with no target: a dashed track */
+.ring .ring-track.is-none {
+  stroke: color-mix(in srgb, var(--text-dim) 55%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 6;
+}
+
+.ring-arc {
+  stroke-linecap: round;
+}
+
+.ring-reels .ring-arc {
+  stroke: var(--type-reels);
+}
+
+.ring-feed .ring-arc {
+  stroke: var(--type-feed);
+}
+
+.ring-reels .ring-badge rect {
+  fill: var(--type-reels);
+}
+
+.ring-feed .ring-badge rect {
+  fill: var(--type-feed);
+}
+
+.ring-badge text {
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ring-pct {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ring-cap {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+/* ------------------------------------------------------------ words */
+.track-words {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.track-sentence {
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.lg-type--reels b {
+  color: var(--type-reels-light);
+}
+
+.lg-type--feed b {
+  color: var(--type-feed-light);
+}
+
+.legend .lg-of {
+  color: var(--text-dim);
+}
+
+.lg-none {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.lg {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.lg-p {
+  box-shadow: inset 0 0 0 2px var(--status-planned);
+}
+
+.lg-n {
+  width: 5px;
+  height: 5px;
+  margin: 0 2px;
+  background: var(--status-not-started);
+}
+
+.legend-nodate {
+  margin-left: 8px;
+}
+
+.mix-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 64ch;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+.mix-note svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.track-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--danger-light);
+  font-size: var(--fs-sm);
+}
+
+.track-warn svg {
+  flex: none;
+}
+
+.track-team {
+  color: var(--text-dim);
+}
+
+.track-team .mono {
+  color: var(--text);
+}
+
+.track-targets-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-sm);
+}
+
+/* ------------------------------------------------------------ dots */
+.track-dots {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.dots {
+  --cell: 26px;
+  --dot: 12px;
+  --empty: 5px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--cell));
+  grid-auto-rows: var(--cell);
+  row-gap: 12px;
+  width: 100%;
+  max-width: calc(var(--cell) * 25);
+}
+
+.dots--sm {
+  --cell: 19px;
+  --dot: 9px;
+  --empty: 4px;
+  row-gap: 8px;
+}
+
+.dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.dot > i {
+  display: block;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+}
+
+.dot--filled > i {
+  background: var(--status-uploaded);
+}
+
+.dot--ring > i {
+  box-shadow: inset 0 0 0 2px var(--status-planned);
+}
+
+.dot--empty > i {
+  width: var(--empty);
+  height: var(--empty);
+  background: var(--dot-empty);
+}
+
+/* over target: green with a thin outer ring */
+.dot--bonus > i {
+  background: var(--status-uploaded);
+  box-shadow: 0 0 0 2px var(--ink), 0 0 0 3px var(--status-uploaded);
+}
+
+/* pace: a thin tick in --text where you should be today */
+.dot.is-pace::before,
+.dot.is-pace-end::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text);
+}
+
+.dot.is-pace::before {
+  left: -1px;
+}
+
+.dot.is-pace-end::after {
+  right: -1px;
+}
+
+.pace-label {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  transform: translateX(-50%);
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.is-pace-end .pace-label {
+  left: auto;
+  right: 0;
+  transform: translateX(50%);
+}
+
+.no-target {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  margin-top: 4px;
+  padding: 14px 18px;
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 45%, transparent);
+  border-radius: var(--r-panel);
+  color: var(--text-dim);
+}
+
+.track-dots .no-target {
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------------ lanes share one horizontal scale (subgrid) */
+.lanes {
+  display: grid;
+  grid-template-columns: minmax(96px, 170px) minmax(0, calc(19px * 25)) auto auto auto 16px;
+  justify-content: start;
+  column-gap: 22px;
+  row-gap: 14px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.lanes--admin {
+  grid-template-columns: minmax(96px, 170px) minmax(0, calc(19px * 25)) auto auto auto 16px 32px;
+}
+
+.lane {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  row-gap: 4px;
+}
+
+.lane-name {
+  font-weight: 500;
+}
+
+.lane-track {
+  min-width: 0;
+}
+
+.lane-count {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lane-pace {
+  min-width: 5.5em;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.lane-pace.is-reached {
+  color: var(--status-uploaded-light);
+}
+
+.lane-mix-icon {
+  display: inline-grid;
+  color: var(--text-dim);
+  cursor: help;
+}
+
+.lane-link {
+  width: 32px;
+  height: 32px;
+}
+
+.lane-note {
+  grid-column: 2 / -1;
+  font-size: var(--fs-xs);
+}
+
+.lane-empty {
+  display: flex;
+  align-items: center;
+  height: 19px;
+  padding: 0 12px;
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 40%, transparent);
+  border-radius: var(--r-pill);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  max-width: calc(19px * 25);
+}
+
+/* ------------------------------------------------------------ by brand (Behomy Master): one hue, uploaded green */
+.split {
+  display: grid;
+  grid-template-columns: minmax(96px, 170px) minmax(0, 1fr);
+  column-gap: 22px;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--line);
+}
+
+.split-title {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.split-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+}
+
+.split-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+}
+
+.split-name {
+  color: var(--text-dim);
+}
+
+.split-meter {
+  display: block;
+  width: 56px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--dot-empty);
+}
+
+.split-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--status-uploaded);
+}
+
+.split-meter.is-none {
+  background: none;
+  border: 1px dashed var(--line);
+}
+
+/* ------------------------------------------------------------ narrower screens */
+@media (max-width: 1240px) {
+  .track-top {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .track-words {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --fs-num: 2.75rem;
+  }
+
+  .track {
+    padding-top: 22px;
+  }
+
+  .track-top {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .dots {
+    --cell: 22px;
+    --dot: 11px;
+  }
+
+  .dots--sm {
+    --cell: 17px;
+    --dot: 8px;
+  }
+
+  .lanes,
+  .lanes--admin {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 12px;
+  }
+
+  .lane {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 12px;
+  }
+
+  .lane-name {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lane-count {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .lane-pace {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .lane-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .lane-types {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .lane-mix,
+  .lane-link {
+    display: none;
+  }
+
+  /* the tick stays; its tiny label would collide with the type counts below */
+  .lanes .pace-label {
+    display: none;
+  }
+
+  .lane-note {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}

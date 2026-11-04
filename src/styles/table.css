@@ -1,0 +1,416 @@
+/* Section headings shared by the table and calendar */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 14px;
+}
+
+.section-head h2 {
+  font-size: var(--fs-lg);
+}
+
+.section-meta {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.content-section {
+  margin-bottom: 48px;
+}
+
+/* ------------------------------------------------------------ toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 220px;
+  max-width: 300px;
+}
+
+.search svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 12px 6px 36px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: var(--raised);
+  font-size: var(--fs-body);
+}
+
+.search input::placeholder {
+  color: color-mix(in srgb, var(--text-dim) 75%, transparent);
+}
+
+.search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.filter-select {
+  min-height: 36px;
+  width: auto;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border-radius: var(--r-pill);
+  color: var(--text-dim);
+}
+
+.filter-select.is-set {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.toolbar-switch {
+  margin-left: auto;
+  padding: 0 4px;
+}
+
+/* ------------------------------------------------------------ table */
+/* scrolls both ways; the horizontal scrollbar is always visible and styled (09 §3) */
+.table-wrap {
+  position: relative;
+  max-height: min(72vh, 760px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--panel);
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-dim) var(--raised);
+}
+
+.table-wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: var(--raised);
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  border: 2px solid var(--raised);
+  border-radius: var(--r-pill);
+  background: var(--text-dim);
+}
+
+.table-wrap::-webkit-scrollbar-corner {
+  background: var(--raised);
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-body);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: 0 -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.th-sort:hover {
+  color: var(--text);
+}
+
+.sort-ind {
+  min-width: 0.7em;
+  color: var(--accent);
+}
+
+.table td {
+  height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td,
+.table tbody tr:last-child th {
+  border-bottom: 0;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.row:hover td,
+.row.is-open td {
+  background: var(--raised);
+}
+
+/* sticky content column for horizontal scrolling; a soft edge shadow once content passes under it */
+.table .c-content {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--panel);
+  box-shadow: 1px 0 0 var(--line);
+  transition: box-shadow 0.15s;
+}
+
+.table-wrap[data-scrolled="true"] .c-content {
+  box-shadow: 1px 0 0 var(--line), 10px 0 14px -8px rgb(0 0 0 / 0.75);
+}
+
+.table th.c-content {
+  z-index: 4;
+}
+
+.cell-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 -6px;
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+
+.row-open .cell-text {
+  min-width: 0;
+}
+
+.row-open .badge {
+  flex: none;
+}
+
+.c-comments {
+  text-align: right;
+}
+
+/* type: the pill shows; the native select sits invisibly on top for the inline edit */
+.type-cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 30px;
+  padding-right: 18px;
+  border-radius: var(--r-pill);
+}
+
+.type-cell::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%239A96AB' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.row:hover .type-cell::after,
+.type-cell:focus-within::after {
+  opacity: 1;
+}
+
+.type-cell-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  border: 0;
+  cursor: pointer;
+  font-size: var(--fs-body);
+}
+
+.type-cell-select option {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.type-cell:has(.type-cell-select:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cell-select {
+  max-width: 100%;
+  min-height: 30px;
+  padding: 2px 26px 2px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%239A96AB' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+  appearance: none;
+  font-size: var(--fs-body);
+  cursor: pointer;
+}
+
+.cell-select:hover,
+.cell-select:focus-visible {
+  border-color: var(--line);
+  background-color: var(--ink);
+}
+
+.cell-select option {
+  background: var(--panel);
+}
+
+.date-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+}
+
+.date-cell:hover {
+  background: var(--ink);
+}
+
+.date-cell-text {
+  font-size: var(--fs-sm);
+  pointer-events: none;
+}
+
+.date-cell-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+
+/* focus-within on the wrapper: Chrome focuses the date input's inner segments, which neither
+   :focus nor :focus-visible on the input itself report */
+.date-cell:focus-within .date-cell-input {
+  opacity: 1;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.date-cell:focus-within .date-cell-text {
+  visibility: hidden;
+}
+
+.cell-ref {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cell-ref a,
+.cell-ig {
+  min-width: 0;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cell-ref a:hover,
+.cell-ig:hover {
+  text-decoration: underline;
+}
+
+.cell-ig {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.cell-ig svg {
+  flex: none;
+}
+
+.cell-more {
+  flex: none;
+  font-size: var(--fs-xs);
+}
+
+.cell-edited {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+@media (max-width: 720px) {
+  /* phones: a narrower sticky Content column leaves room to scroll the rest */
+  .table col:first-child {
+    width: 180px !important;
+  }
+
+  .search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .toolbar-switch {
+    margin-left: 0;
+  }
+
+  .table-wrap {
+    max-height: 70vh;
+  }
+}
