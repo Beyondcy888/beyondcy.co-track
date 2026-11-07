@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  // Where the app is served from. "/" locally and on its own domain; the GitHub Pages
+  // workflow sets BASE_PATH=/beyondcy.co/track/ (beyondcy888.github.io/beyondcy.co/track/).
+  base: process.env.BASE_PATH || '/',
   plugins: [react()],
   server: {
     port: 5173, // must match the Supabase redirect URL http://localhost:5173/**
@@ -26,3 +29,4 @@ export default defineConfig({
     include: ['src/**/*.test.js'],
   },
 });
+how 

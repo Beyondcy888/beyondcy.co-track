@@ -70,7 +70,7 @@ export function AuthProvider({ children }) {
 
   const requestPasswordReset = useCallback(async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}reset-password`,
     });
     return { error: error ? loginError(error) : null };
   }, []);
