@@ -126,12 +126,11 @@ export function UiProviders({ children }) {
   );
 }
 
-// The router works below the app base path (e.g. /beyondcy.co/track on GitHub Pages).
-const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
-
+// The router lives under the app's base path (import.meta.env.BASE_URL): "/beyondcy.co-track/"
+// on github.io, "/" locally and on the domain. In-app links use router paths; never hard-code the base.
 export default function App() {
   return (
-    <BrowserRouter basename={ROUTER_BASENAME}>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ApiContext.Provider value={supabaseApi}>
         <AuthProvider>
           <UiProviders>

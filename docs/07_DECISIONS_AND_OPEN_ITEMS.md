@@ -2,7 +2,35 @@
 
 This file records everything the owner has decided so far (including the dashboard, which is built later), the assumptions made to fill gaps, and what is still open. **If you change something listed here, update this file.**
 
-Update v2 (`09_UPDATE_V2.md`, 4 Nov 2026) replaced the target, ownership and accent decisions below. Where an older doc (01–08) disagrees with 09, 09 wins.
+Update v2 (`09_UPDATE_V2.md`, 4 Nov 2026) replaced the target, ownership and accent decisions below. Where an older doc (01–08) disagrees with 09, 09 wins. The split into three repos (`10_SPLIT_INTO_3_REPOS.md`, 9 Nov 2026) decides repos, hosting and links; connecting the domain comes later with `11_CONNECT_DOMAIN.md`.
+
+## Repos and hosting: the split into three repos (10, 9 Nov 2026)
+
+**Decided by the owner**
+- Three separate repos under **Beyondcy888**, in three folders side by side in `Beyondcy-Web\` (a plain folder, not a repo), pushed by `deploy.ps1` from that folder:
+  - `beyondcy.co` (portfolio): https://beyondcy888.github.io/beyondcy.co/
+  - `beyondcy.co-dash` (marketing dashboard): https://beyondcy888.github.io/beyondcy.co-dash/
+  - `beyondcy.co-track` (tracker): https://beyondcy888.github.io/beyondcy.co-track/
+- Commit history is kept: dash and track were split out with `git subtree split`; the portfolio repo is the old monorepo, cleaned up.
+- The doc folders (`START-DEV-01`, `START-DEV-02`, `START-SUPABASE-01`, `DEPLOY-PLAN.md`, `TASKS.md`) moved to the tracker's `docs/`.
+- Supabase is used by the tracker only. The repos are public (GitHub Free).
+- The domain is connected later (`11`). Until then there is **no `CNAME` file in any repo and no custom domain** in Settings → Pages (a `CNAME` would redirect the github.io link to a domain that isn't connected).
+- This replaces the single-site setup of 5–7 Nov (one repo published as `/`, `/dash/` and `/track/` by a combined workflow). That workflow never deployed, because the Supabase secrets were never added, and it was removed.
+
+**Why the switch to the domain stays small**
+- Tracker: one line. The workflow sets `VITE_BASE_PATH: /beyondcy.co-track/`; deleting it makes the base `/`. Everything else follows `import.meta.env.BASE_URL` (router basename, logos, password-reset link).
+- Portfolio and dash: relative paths only, so only the `SITE LINKS` block at the top of `index.html` changes (plus the portfolio's `og:url`, which sits right under it).
+- `deploy.ps1`: `$UseCustomDomains = $true` makes it print the domain links.
+- Safety nets until everything has worked for a week: the old folder `D:\BEHOMY\beyondcy.co-OLD` (the owner deletes it), the `pre-split-backup` tag on GitHub, and `D:\BEHOMY\beyondcy.co-backup-20261109.bundle`.
+
+**Build decisions made during the split (owner: confirm or correct)**
+- The router uses `basename={import.meta.env.BASE_URL}` exactly as 10 says, trailing slash included (React Router 7 supports it). GitHub redirects the slash-less `/beyondcy.co-track` to `/beyondcy.co-track/`.
+- `SITE_LINKS` lives in `src/siteLinks.js`. Nothing links between the sites yet, so nothing imports it until a link is added.
+- The tracker workflow kept the first release's extras: a check that the two secrets exist (a clear error instead of a blank page), `npm test`, and a secret scan of `dist/`, which now also catches a real `sb_secret_…` key. (The scan looks for a key-shaped value, because the bare prefix appears inside supabase-js.)
+- The real publishable key in the archived `docs/START-DEV-01/08_CONNECT_TO_SUPABASE.md` was replaced by a placeholder, like the working copy `08`. It is still in the old monorepo's history (the `beyondcy.co` repo); the key is public by design, so nothing else is needed.
+- The portfolio's `og:url` now points at its github.io address (before, it pointed at `beyondcy.co`, which doesn't serve the site yet).
+- `deploy.ps1` is used exactly as given. Its secret check also matches its own pattern text, which appears in `docs/deploy.ps1` and in `10`. So the tracker's first commit after the split was made by hand after a manual secret scan, and `deploy.ps1` then pushed it. Later edits are fine unless a changed line contains that pattern.
+- Fixed on the way: a typo in the dev-only `/dev-check` page (an apostrophe inside a single-quoted string) stopped it loading in `npm run dev`. Production builds never contained that page.
 
 ## Tracker: decided by the owner
 
@@ -52,7 +80,7 @@ Update v2 (`09_UPDATE_V2.md`, 4 Nov 2026) replaced the target, ownership and acc
 - [ ] Final tracker visuals: the owner may send more UI direction later
 - [ ] Real emails for the 7 accounts (for `03_assign_users.sql`)
 - [ ] Supabase Pro plan and custom SMTP before go-live
-- [ ] DNS access for beyondcy.co, and checking that company email and the old server aren't affected
+- [ ] Connect the domain with `11_CONNECT_DOMAIN.md`: DNS access for beyondcy.co (Hostinger), and checking that company email and the old server aren't affected
 - [ ] Re-enter this month's targets on the Targets page (v1 targets were deleted by the v2 SQL)
 
 ---
@@ -134,7 +162,7 @@ Made while building v2, where 09 left room. Owner: confirm or correct.
 Made while building, where the docs left room. Owner: confirm or correct. Items marked (v2) changed in the update.
 
 **Structure and tooling**
-- The three sites were built as three folders in one workspace (`beyondcy-site`, `beyondcy-dash`, `beyondcy-track`), each ready to push as its own repo.
+- The three sites were built as three folders in one workspace (`beyondcy-site`, `beyondcy-dash`, `beyondcy-track`), each ready to push as its own repo. (On 5 Nov the owner pushed them as one monorepo; on 9 Nov they were split into `beyondcy.co`, `beyondcy.co-dash` and `beyondcy.co-track`: see "Repos and hosting" at the top.)
 - `@tanstack/react-table` is pinned to **v8** as the spec says (v9 exists).
 - CI uses **Node 24** (Node 20 is end-of-life, and Vite 8 needs 20.19+). The workflow uses the latest action majors (checkout v7, setup-node v7, upload-pages-artifact v5, deploy-pages v5), runs the unit tests, and fails if `service_role` appears in the build.
 - Library code is split into its own cached chunks (react, supabase, vendor).

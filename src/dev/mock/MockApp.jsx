@@ -59,7 +59,7 @@ export function MockApp() {
   const switchTo = useCallback((next) => {
     write('mock-as', next);
     setPersona(next);
-    window.history.replaceState(null, '', '/');
+    window.history.replaceState(null, '', import.meta.env.BASE_URL);
   }, []);
 
   const person = store.people.find((p) => p.id === PERSONAS[persona]) ?? null;
@@ -97,7 +97,7 @@ export function MockApp() {
   const showBar = read('mock-bar', '1') !== '0';
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ApiContext.Provider value={api}>
         <AuthContext.Provider value={auth}>
           <UiProviders>

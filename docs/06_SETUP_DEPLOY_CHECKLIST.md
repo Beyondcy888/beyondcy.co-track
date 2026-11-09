@@ -2,15 +2,22 @@
 
 Supabase menu names change from time to time. If a label below doesn't match exactly, look for the closest equivalent.
 
+> **Now (10, 9 Nov 2026):** three repos under **Beyondcy888**, live on github.io links until the domain is connected (`11_CONNECT_DOMAIN.md`):
+> - Portfolio `Beyondcy888/beyondcy.co` → https://beyondcy888.github.io/beyondcy.co/
+> - Dashboard `Beyondcy888/beyondcy.co-dash` → https://beyondcy888.github.io/beyondcy.co-dash/
+> - Tracker `Beyondcy888/beyondcy.co-track` → https://beyondcy888.github.io/beyondcy.co-track/
+>
+> The steps below that mention `track.beyondcy.co`, custom domains, `CNAME` files or DNS are for **later** (file 11). Until then: no `CNAME` file anywhere and no custom domain in Settings → Pages.
+
 ## A. Owner: Supabase (do this before the agent starts)
 
 1. Create a Supabase project (region: **Southeast Asia (Singapore)**). Store the database password in a password manager. **Never** put it in the repo or give it to the agent.
 2. **SQL Editor → New query**: paste and run `supabase/01_schema.sql`. It should finish with "Success". Run it **only once**.
 3. Run `supabase/02_seed.sql` (safe to run again).
 4. **Authentication → Sign In / Providers:** keep Email enabled and **turn off "Allow new users to sign up"**.
-5. **Authentication → URL Configuration:**
-   - Site URL: `https://track.beyondcy.co`
-   - Redirect URLs: `https://track.beyondcy.co/**` and `http://localhost:5173/**`
+5. **Authentication → URL Configuration** (now, on github.io; file 11 switches the Site URL to `https://track.beyondcy.co` later):
+   - Site URL: `https://beyondcy888.github.io/beyondcy.co-track/`
+   - Redirect URLs: `https://beyondcy888.github.io/beyondcy.co-track/**`, `https://track.beyondcy.co/**` (ready for later) and `http://localhost:5173/**`
 6. **Authentication → Users → Add user → Create new user**, 7 times (Admin Beyondcy, Excel, Dika, Zaki, Arum, Ilyas, Anne). Enter the email and a strong temporary password, and tick **Auto Confirm User**.
 7. Open `supabase/03_assign_users.sql`, replace the 7 placeholder emails with the real ones, and run it. The result table must show all 7 people with a name and a role.
 8. Copy the **Project URL** and the **anon public key** (newer projects call it the **publishable key**) from Project Settings → API, or the **Connect** button. Give these two values to the agent. **Never share the `service_role` / secret key.**
@@ -21,16 +28,17 @@ Before go-live:
 
 ## B. Agent: build and deploy
 
-1. Create the three repos (`01`), each with a `CNAME` file.
-2. Tracker: `.env.example` committed, `.env.local` git-ignored. Add GitHub Actions secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-3. GitHub Actions workflow for `beyondcy-track`: `npm ci` → `npm run build` → copy `dist/index.html` to `dist/404.html` → deploy `dist/` to Pages.
-4. Placeholder repos: Pages serves from `main` / root.
-5. In each repo: Settings → Pages → set the custom domain → **Enforce HTTPS** once the certificate is issued.
-6. Run every acceptance check in section D.
+1. The three repos (`01`): `Beyondcy888/beyondcy.co`, `Beyondcy888/beyondcy.co-dash`, `Beyondcy888/beyondcy.co-track`. **No `CNAME` file yet** (file 11 adds them).
+2. Tracker: `.env.example` committed, `.env.local` git-ignored. Add GitHub Actions secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to `beyondcy.co-track`.
+3. GitHub Actions workflow for `beyondcy.co-track` ("Deploy tracker"): secrets check → `npm ci` → `npm test` → `npm run build` with `VITE_BASE_PATH: /beyondcy.co-track/` → copy `dist/index.html` to `dist/404.html` → secret scan → deploy `dist/` to Pages (Source: **GitHub Actions**).
+4. Placeholder repos (`beyondcy.co`, `beyondcy.co-dash`): Pages serves from `main` / `(root)`, which holds `index.html`, an empty `.nojekyll` and the favicons.
+5. Custom domain: **leave empty for now.** Later (file 11): in each repo, Settings → Pages → set the custom domain → **Enforce HTTPS** once the certificate is issued.
+6. Push with `deploy.ps1` from the parent `Beyondcy-Web` folder (`.\deploy.ps1`, or `.\deploy.ps1 track` for one project).
+7. Run every acceptance check in section D.
 
-## C. Owner: DNS at the domain provider for beyondcy.co
+## C. Owner: DNS at the domain provider for beyondcy.co (later: file 11)
 
-Replace `<github-user>` with the GitHub account or organisation that owns the repos. **Confirm these values against GitHub's current "Managing a custom domain for your GitHub Pages site" docs before saving.**
+Do this with `11_CONNECT_DOMAIN.md`, which has the exact Hostinger steps. The account that owns the repos is **Beyondcy888**. **Confirm these values against GitHub's current "Managing a custom domain for your GitHub Pages site" docs before saving.**
 
 | Type | Name | Value |
 |---|---|---|
@@ -38,9 +46,9 @@ Replace `<github-user>` with the GitHub account or organisation that owns the re
 | A | `@` | `185.199.109.153` |
 | A | `@` | `185.199.110.153` |
 | A | `@` | `185.199.111.153` |
-| CNAME | `www` | `<github-user>.github.io` |
-| CNAME | `dash` | `<github-user>.github.io` |
-| CNAME | `track` | `<github-user>.github.io` |
+| CNAME | `www` | `beyondcy888.github.io` |
+| CNAME | `dash` | `beyondcy888.github.io` |
+| CNAME | `track` | `beyondcy888.github.io` |
 
 - Also **verify the domain** in GitHub (account/organisation settings → Pages → verified domains). This prevents anyone else from claiming your subdomains.
 - **Before changing DNS:** make sure company email (MX records) and anything else on the old server keeps working. Don't delete records you don't recognise without checking.
@@ -81,4 +89,4 @@ Replace `<github-user>` with the GitHub account or organisation that owns the re
 **Quality**
 - [ ] It works at 390px, 1024px and 1440px. Keyboard navigation works with visible focus. Reduced motion disables the dot animation.
 - [ ] No secret appears in the repo or the built JS (search the output for `service_role`).
-- [ ] `beyondcy.co` and `dash.beyondcy.co` show their Stay tuned pages over HTTPS. Dash and track have `noindex`.
+- [ ] The portfolio and the dashboard show their Stay tuned pages over HTTPS (now https://beyondcy888.github.io/beyondcy.co/ and https://beyondcy888.github.io/beyondcy.co-dash/; `beyondcy.co` and `dash.beyondcy.co` after file 11). Dash and track have `noindex`.

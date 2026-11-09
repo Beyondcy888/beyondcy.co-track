@@ -14,7 +14,7 @@ The owner has already run `01_schema.sql`, `02_seed.sql` and `03_assign_users.sq
 - The publishable key is **meant to be public**: it ships inside the website's JavaScript anyway, and Row Level Security protects the data. Even so, keep it in environment variables, not hard-coded, so it can be rotated in one place.
 - These are the **only** two Supabase values this project may use. If any task seems to need the secret / `service_role` key or the database password, stop and ask the owner. The answer is no.
 
-## 1. Environment files (repo `beyondcy-track`)
+## 1. Environment files (repo `beyondcy.co-track`)
 
 `.env.local` (create locally; **git-ignored**):
 ```
@@ -28,7 +28,7 @@ VITE_SUPABASE_URL=https://YOUR-PROJECT-REF.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR-PUBLISHABLE-KEY
 ```
 
-`.gitignore` must include `.env.local` and `.env*.local`.
+`.gitignore` must include `.env.local` and `.env*.local` (since 10 it lists `.env`, `.env.local` and `.env.*.local`).
 
 ## 2. Client (`src/lib/supabase.js`)
 
@@ -62,6 +62,7 @@ Create exactly one client and import it everywhere.
 - Sign in: `supabase.auth.signInWithPassword({ email, password })`.
 - Sign out: `supabase.auth.signOut()`, then clear cached data and realtime channels.
 - Forgot password: `supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://track.beyondcy.co/reset-password' })`. Use `http://localhost:5173/reset-password` in development, derived from `window.location.origin`. On `/reset-password`, call `supabase.auth.updateUser({ password })`.
+  - **Since 10:** `redirectTo` is `window.location.origin + import.meta.env.BASE_URL + 'reset-password'`, so it is `https://beyondcy888.github.io/beyondcy.co-track/reset-password` on github.io now, `https://track.beyondcy.co/reset-password` after file 11, and `http://localhost:5173/reset-password` locally.
 - After sign-in, load the profile (see `04_DATABASE_GUIDE.md`). If there's no profile, no `role_id`, or `is_active = false`, show the "no tracker" message from `01`.
 
 ## 4. GitHub deployment
@@ -70,8 +71,8 @@ Create exactly one client and import it everywhere.
    - `VITE_SUPABASE_URL` = the Project URL above
    - `VITE_SUPABASE_ANON_KEY` = the publishable key above
 2. **Settings → Pages → Source: GitHub Actions.**
-3. Add `public/CNAME` containing `track.beyondcy.co`.
-4. Add `.github/workflows/deploy.yml`:
+3. Add `public/CNAME` containing `track.beyondcy.co`. **Not yet (10):** no `CNAME` until the domain is connected; file 11 adds it.
+4. Add `.github/workflows/deploy.yml`. (The repo's real workflow is this one plus a secrets check, `npm test`, a secret scan, the latest action majors, and `VITE_BASE_PATH: /beyondcy.co-track/` in the build step's `env`, which file 11 removes.)
 
 ```yaml
 name: Deploy tracker

@@ -70,7 +70,7 @@ export default function DevCheck() {
         .select()
         .single();
       add('Dika: insert into Beefix → status not_started', ins.data?.status === 'not_started', ins.error?.message ?? `status ${ins.data?.status}`);
-      add('Dika: the new item's PIC is Dika (v2)', ins.data?.pic_id === profile.id, ins.error?.message ?? `pic_id ${ins.data?.pic_id}`);
+      add("Dika: the new item's PIC is Dika (v2)", ins.data?.pic_id === profile.id, ins.error?.message ?? `pic_id ${ins.data?.pic_id}`);
       if (ins.data) {
         const del = await supabase.from('content_items').delete().eq('id', ins.data.id).select('id');
         add('Dika: delete the test row', del.data?.length === 1, del.error?.message ?? `${del.data?.length} row deleted`);

@@ -2,19 +2,23 @@
 
 ## Repositories and hosting
 
-Hosting is **GitHub Pages**, chosen by the owner. GitHub Pages serves **one custom domain per repository**, so there are **three repos**:
+Hosting is **GitHub Pages**, chosen by the owner. GitHub Pages serves **one custom domain per repository**, so there are **three repos** (split on 9 Nov 2026, `10_SPLIT_INTO_3_REPOS.md`), all under the GitHub account **Beyondcy888**:
 
-| Repo (suggested name) | Domain | Contents |
-|---|---|---|
-| `beyondcy-site` | `beyondcy.co` (+ `www.beyondcy.co` redirect) | Static "Stay tuned" page |
-| `beyondcy-dash` | `dash.beyondcy.co` | Static "Stay tuned" page |
-| `beyondcy-track` | `track.beyondcy.co` | The tracker app (React + Vite + Supabase) |
+| Repo | Live now (github.io) | Later, with the domain (`11`) | Contents |
+|---|---|---|---|
+| `Beyondcy888/beyondcy.co` | https://beyondcy888.github.io/beyondcy.co/ | `beyondcy.co` (+ `www.beyondcy.co` redirect) | Static "Stay tuned" page (portfolio) |
+| `Beyondcy888/beyondcy.co-dash` | https://beyondcy888.github.io/beyondcy.co-dash/ | `dash.beyondcy.co` | Static "Stay tuned" page (marketing dashboard) |
+| `Beyondcy888/beyondcy.co-track` | https://beyondcy888.github.io/beyondcy.co-track/ | `track.beyondcy.co` | The tracker app (React + Vite + Supabase) |
+
+On the owner's computer the three repos sit side by side in a plain folder, `Beyondcy-Web\` (not a repo), with `deploy.ps1`, which pushes each folder that has changes to its own repo (a copy is in `docs/deploy.ps1`).
 
 Notes:
 - On the free GitHub plan, Pages requires **public** repos. That is acceptable **only because nothing secret is ever committed**. The anon/publishable key is public by design; RLS protects the data.
 - The tracker is a single-page app. GitHub Pages has no server rewrites, so the build must **copy `dist/index.html` to `dist/404.html`**. Deep links and refreshes then load the app, and React Router (`BrowserRouter`) takes over. Do not use hash routing; it clashes with Supabase auth redirects.
-- Each repo needs a `CNAME` file containing its domain, which goes into the built output (`public/CNAME` in Vite).
-- Deploy the tracker with a **GitHub Actions** workflow (build on push to `main`, publish `dist/`). The two placeholder repos can be served straight from the branch with no build.
+- **No `CNAME` file in any repo until the domain is connected** (`11`): a `CNAME` makes GitHub redirect the github.io link to a domain that isn't connected yet. File 11 adds them (`public/CNAME` in the tracker, a root `CNAME` in the other two).
+- **Base path:** on github.io the tracker lives under `/beyondcy.co-track/`. The workflow sets `VITE_BASE_PATH: /beyondcy.co-track/` → Vite `base` → `import.meta.env.BASE_URL`, which the router `basename`, the logos and the password-reset link use. File 11 removes that one line (base `/`). The two static sites use relative paths only, so they work at both addresses unchanged.
+- **Links between the sites** live in one place per project: `src/siteLinks.js` (`SITE_LINKS`) in the tracker, a `SITE LINKS` comment block at the top of `index.html` in the other two.
+- Deploy the tracker with a **GitHub Actions** workflow (build on push to `main`, publish `dist/`). The two placeholder repos are served straight from the branch (`main` / root, with an empty `.nojekyll`), no build.
 
 ## Stack
 
@@ -38,9 +42,11 @@ VITE_SUPABASE_ANON_KEY=YOUR-ANON-OR-PUBLISHABLE-KEY
 ## Suggested tracker structure
 
 ```
-beyondcy-track/
-  public/CNAME                      track.beyondcy.co
+beyondcy.co-track/                  (repo root; was beyondcy-track/ in the old monorepo)
+  .github/workflows/deploy.yml      "Deploy tracker" (sets VITE_BASE_PATH for github.io)
+  public/                           favicons, logos, site.webmanifest (no CNAME until 11)
   src/
+    siteLinks.js                    SITE_LINKS: the three sites' addresses (one place)
     lib/supabase.js                 client from env vars
     lib/time.js                     WIB helpers: now, today, month range, greeting
     lib/progress.js                 target/progress/pace calculations (pure functions + tests)

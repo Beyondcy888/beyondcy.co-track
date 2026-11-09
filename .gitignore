@@ -1,7 +1,13 @@
-node_modules
-dist
+# dependencies and build output
+node_modules/
+dist/
+
+# secrets: never commit these (.env.example, with placeholders only, is committed)
+.env
 .env.local
-.env*.local
+.env.*.local
+
+# logs, OS files, Vite cache
 *.log
 .DS_Store
-.vite
+.vite/

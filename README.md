@@ -1,7 +1,11 @@
-# beyondcy-track
+# beyondcy.co-track
 
-The Beyondcy content tracker at **track.beyondcy.co**: React + Vite + Supabase, deployed to GitHub Pages.
-The full spec is in [`docs/`](docs/) (start with `docs/00_START_HERE.md`; **update v2** is `docs/09_UPDATE_V2.md`, which wins over 01–08). The database SQL is in [`supabase/`](supabase/) (reference only; the owner runs it, including `04_update_v2.sql`).
+The Beyondcy content tracker: React + Vite + Supabase, deployed to GitHub Pages.
+
+- **Live:** https://beyondcy888.github.io/beyondcy.co-track/ (later **https://track.beyondcy.co**, see [`docs/11_CONNECT_DOMAIN.md`](docs/11_CONNECT_DOMAIN.md))
+- **Repo:** `github.com/Beyondcy888/beyondcy.co-track`. The portfolio (`Beyondcy888/beyondcy.co`) and the dashboard (`Beyondcy888/beyondcy.co-dash`) have their own repos; [`src/siteLinks.js`](src/siteLinks.js) holds the three addresses.
+
+The full spec is in [`docs/`](docs/) (start with `docs/00_START_HERE.md`; **update v2** is `docs/09_UPDATE_V2.md`, which wins over 01–08; the split into three repos is `docs/10_SPLIT_INTO_3_REPOS.md`). The build's task list is [`docs/TASKS.md`](docs/TASKS.md). The database SQL is in [`supabase/`](supabase/) (reference only; the owner runs it, including `04_update_v2.sql`).
 
 **v2 at a glance:** Beyondcy logo + green accent, full-width pages, a Notion-like sidebar (pin / hide / peek at the left edge, Ctrl/Cmd+\), a banner per tracker, targets per person × brand split into Reels + Feed (Admin's Targets page), a PIC on every item, the ring chart next to the dots, and Admin's Dashboard.
 
@@ -53,7 +57,19 @@ src/
 
 ## Deploy (GitHub Pages)
 
+**Push:** from the parent folder `Beyondcy-Web`, run `.\deploy.ps1 track` (or `.\deploy.ps1` for every project with changes). It commits, refuses secret files and keys, pushes to this repo, and prints the live link. A copy of the script is in [`docs/deploy.ps1`](docs/deploy.ps1).
+
+On every push to `main`, `.github/workflows/deploy.yml` ("Deploy tracker") checks the Supabase secrets exist, runs the tests, builds with `VITE_BASE_PATH=/beyondcy.co-track/`, copies `index.html` to `404.html` (so deep links and refreshes work), checks the build has no secret key, and publishes `dist/`. It's live in about 1–2 minutes.
+
+One-time setup (owner):
 1. Repo → Settings → Secrets and variables → Actions → add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-2. Settings → Pages → Source: **GitHub Actions**.
-3. Push to `main`. `.github/workflows/deploy.yml` tests, builds, copies `index.html` to `404.html` (so deep links work), checks the build has no `service_role`, and publishes.
-4. Settings → Pages → custom domain `track.beyondcy.co` (also in `public/CNAME`) → tick **Enforce HTTPS** once the certificate is issued.
+2. Settings → Pages → Source: **GitHub Actions**. Custom domain: **leave empty** for now.
+3. Supabase → Authentication → URL Configuration: Site URL `https://beyondcy888.github.io/beyondcy.co-track/`; Redirect URLs `https://beyondcy888.github.io/beyondcy.co-track/**`, `https://track.beyondcy.co/**` and `http://localhost:5173/**`.
+
+**The base path is one value.** `VITE_BASE_PATH` (set only in the workflow) → Vite `base` → `import.meta.env.BASE_URL`, which the router `basename`, the logos and the password-reset link use. Locally it is `/`. Never type `/beyondcy.co-track/` in the code. To try the github.io version locally:
+
+```powershell
+$env:VITE_BASE_PATH='/beyondcy.co-track/'; npm run build; npx vite preview --base /beyondcy.co-track/
+```
+
+**No `public/CNAME` yet:** it would make GitHub redirect the github.io link to a domain that isn't connected. When the domain is connected (`docs/11_CONNECT_DOMAIN.md`): delete the `VITE_BASE_PATH` line in the workflow, add `public/CNAME` with `track.beyondcy.co`, update `src/siteLinks.js`, then set the custom domain and **Enforce HTTPS** in Settings → Pages.
