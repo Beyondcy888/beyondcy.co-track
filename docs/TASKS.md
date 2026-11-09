@@ -77,15 +77,19 @@
 - [x] Sandbox test (scratchpad repo whose push URL is a dead local path, so nothing can reach GitHub): `.env.production` BLOCKED · pattern text BLOCKED (confirms the S0 finding) · `.env.example` allowed · wrong remote FAILED · branch `feature` FAILED · failed push retried on the next run · up to date → skipped
 
 ### S6 · First push
-- [ ] `.\deploy.ps1 -Message "Split into three repositories"` → all three `pushed`
+- [x] Tracker committed by hand first (99e5b95 "Split into three repositories") after the secret scan: no secret files; deploy.ps1's pattern only hit its own definition line in `docs/deploy.ps1` + both copies of 10; no key/JWT anywhere (the project URL appears in the 10 doc + archive: not secret)
+- [x] `.\deploy.ps1 -Message "Split into three repositories"` → **all three `pushed`** (site 64ff9e0, dash 984cbca committed by the script, track 99e5b95)
+- [x] On GitHub: each `main` = local HEAD; trees: site 9 files, dash 9, track 142; **no `CNAME`, no `.env*`** (except `.env.example`) in any repo (GitHub API)
+- [x] Fixed after the push: the `--single-branch` clones (dash, track) only fetched `split/*`, so they had no `origin/main` and `deploy.ps1` would never say "skipped" → `git remote set-branches origin '*'`, `fetch --prune`, upstream `origin/main`. Now all three: upstream `origin/main`, 0/0, clean; a no-op `deploy.ps1` run says "skipped" ×3
+- [x] GitHub Actions: "Deploy tracker" run 42589388990 failed at "Check the Supabase secrets are set", as expected (no secrets yet). Portfolio: no workflow any more. (Run 42587256829 on `beyondcy.co` = the old combined workflow on the S1 push, failed at secrets as predicted)
 
-### S7 · OWNER: GitHub settings
-- [ ] a) `beyondcy.co-track` secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- [ ] b) Pages: site + dash = Deploy from a branch `main` / `(root)`; track = GitHub Actions; re-run "Deploy tracker"
-- [ ] c) Custom domain empty on all three
+### S7 · OWNER: GitHub settings (owner: done, 9 Nov)
+- [x] a) `beyondcy.co-track` secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- [x] b) Pages: site + dash = Deploy from a branch `main` / `(root)`; track = GitHub Actions (all three `has_pages: true`; dash built at once). Tracker build triggered by the S9 push of this file
+- [x] c) Custom domain empty on all three
 
-### S8 · OWNER: Supabase URL configuration
-- [ ] Site URL `https://beyondcy888.github.io/beyondcy.co-track/`; Redirect URLs `…/beyondcy.co-track/**`, `https://track.beyondcy.co/**`, `http://localhost:5173/**`
+### S8 · OWNER: Supabase URL configuration (owner: done, 9 Nov)
+- [x] Site URL `https://beyondcy888.github.io/beyondcy.co-track/`; Redirect URLs `…/beyondcy.co-track/**`, `https://track.beyondcy.co/**`, `http://localhost:5173/**`
 
 ### S9 · Verify (all must pass)
 - [ ] Portfolio page with logo + favicon
