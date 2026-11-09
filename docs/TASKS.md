@@ -92,6 +92,7 @@
 - [x] Site URL `https://beyondcy888.github.io/beyondcy.co-track/`; Redirect URLs `…/beyondcy.co-track/**`, `https://track.beyondcy.co/**`, `http://localhost:5173/**`
 
 ### S9 · Verify (all must pass)
+> 9 Nov: tracker live (run 42591126619: secrets ✓ tests ✓ build ✓ scan ✓ deploy ✓); live browser QA 25/25 (logo needed a wait on the first load only); dash live 8/8 (`noindex`). `.\deploy.ps1` after editing only this file pushed only the tracker. **Portfolio still 404: no Pages build ever ran** → asked the owner to check Settings → Pages Source = Deploy from a branch `main` / `(root)` (probably still "GitHub Actions" from the old setup).
 - [ ] Portfolio page with logo + favicon
 - [ ] Dash page with `noindex`
 - [ ] Tracker loads with styles, logo, favicon
@@ -103,6 +104,10 @@
 - [ ] No `.env.local` and no `CNAME` in any GitHub repo
 
 ### S10 · Finish
+- [x] 9 Nov: the owner committed `TASKS.md` in `<OLD>` ("TASK_UPDATE_3REPO", 0506af7, local only) and pressed Sync → VS Code started merging the portfolio cleanup into `<OLD>` (files deleted from disk, conflict on TASKS.md). Merge aborted, files restored. To stop a repeat: `<OLD>` has no upstream any more and its push URL is `DISABLED-this-is-the-old-backup-folder` (undo: `git remote set-url --push origin https://github.com/Beyondcy888/beyondcy.co.git`). Owner told to work in `Beyondcy-Web`.
+- [!] Portfolio still 404 on 9 Nov (no Pages build ever ran): owner sets `beyondcy.co` → Settings → Pages → Deploy from a branch `main` / `(root)` (or None → Save, then main/root → Save to force a build)
+- [!] Owner's real-login checks: refresh a brand page; password-reset email opens `…/beyondcy.co-track/reset-password`
+- Owner now works in Antigravity on `D:\BEHOMY\Beyondcy-Web` (not the old folder)
 - [ ] Rename `<OLD>` → `D:\BEHOMY\beyondcy.co-OLD` (owner deletes it after a week; close VS Code on it first if Windows refuses)
 - [ ] Memory + this list updated with the final state
 
