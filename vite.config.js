@@ -29,4 +29,3 @@ export default defineConfig({
     include: ['src/**/*.test.js'],
   },
 });
-how 
