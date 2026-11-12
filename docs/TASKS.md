@@ -97,10 +97,13 @@
 ### W10 · Show the owner, then deploy
 - [x] Localhost running (12 Nov 21:06): 5173 tracker (real), 5174 tracker (sample data), 3000 portfolio
 - [x] Pre-flight of what `deploy.ps1` would commit: no secret-named file, no key pattern, no `CNAME`, largest file 1.7 MB
-- [ ] Owner looks and says "push"
-- [ ] `.\deploy.ps1 -Message "Update v3"` (only after the owner's go)
-- [!] OWNER ACTION, best done just before the push: github.com → `beyondcy.co` → Settings → Pages → Source = **GitHub Actions** (the portfolio now needs a build). If the push comes first, re-run "Deploy portfolio" in the Actions tab afterwards
-- [ ] Check the three live links; tracker: sign in, upload a photo, drag a chip
+- [x] Owner looked and said "push" (12 Nov, ~21:15 WIB)
+- [x] `.\deploy.ps1 -Message "Update v3: …"` → **site pushed (03688d5), track pushed (9b25c18), dash skipped (no changes)**; GitHub `main` = local HEAD on both. (This edit to the list itself is local only until the next push.)
+- [x] Deploy runs (12 Nov, 14:15–14:17 UTC): "Deploy tracker" success, "Deploy portfolio" success. **All three links answer 200**; live browser check: portfolio 4 pages × 1440 and 390 clean, `/login/` is the 404 page, no README or `package.json` exposed; tracker lands on the styled login page, deep links boot, the 9 brand logos and the 800 font weight are deployed
+- [!] On the portfolio repo a second run, "pages build and deployment", ran too and also succeeded: that is the old branch-based publishing, so its Pages Source is still "Deploy from a branch". The site is right today only because "Deploy portfolio" finished last (14:17:06 vs 14:16:00). Until the source is switched (OWNER ACTION below), every push races the two, and if the branch build ever finishes last the link would show the repo's README instead of the site
+- [!] OWNER ACTION (still needed after the push): github.com → `beyondcy.co` → Settings → Pages → Source = **GitHub Actions**. No re-run is needed: the site that is live now stays
+- [ ] Owner, on the live tracker with real logins: sign in as Admin and as a staff member, upload a photo, create a project for two people, drag a chip (the real database was never exercised signed-in during the build)
+- [ ] This list's own last edits (the W10 ticks) are local only: they go up with the next push
 - [ ] Owner's swaps, if any: brand logos / colours (`src/config/brandStyle.js`; Lahap + Beefix are both yellow, Behomy + Homy8 both orange), the Overdue group in the reminder, the portfolio's custom 404 page
 
 ---
