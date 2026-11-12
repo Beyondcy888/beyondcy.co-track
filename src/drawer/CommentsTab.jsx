@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTracker } from '../data/TrackerProvider.jsx';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { friendlyError } from '../lib/errors.js';
-import { Initial, RelativeTime, Spinner } from '../ui/bits.jsx';
+import { Avatar } from '../people/Avatar.jsx';
+import { RelativeTime, Spinner } from '../ui/bits.jsx';
 import { IconTrash } from '../ui/icons.jsx';
 
 const MAX = 4000;
@@ -91,7 +92,7 @@ export function CommentsTab({ item }) {
           {list.map((c) => (
             <li key={c.id} className="comment">
               <div className="comment-head">
-                <Initial name={c.author_name} className="initial-sm" />
+                <Avatar id={c.author_id} name={c.author_name} size={28} />
                 <span className="comment-name">{c.author_id === me ? 'You' : c.author_name || 'Someone'}</span>
                 <RelativeTime value={c.created_at} className="comment-time" />
                 {(c.author_id === me || isAdmin) && (

@@ -4,8 +4,9 @@ import { useAuth } from '../auth/AuthContext.js';
 import { useAppData } from '../data/AppDataProvider.jsx';
 import { trackerPages } from './nav.js';
 import { useSidebar } from './sidebarState.js';
-import { Initial, Logo, LogoMark } from '../ui/bits.jsx';
-import { IconGrid, IconLayers, IconLogOut, IconMenu, IconPanel, IconTarget, IconUser, IconUsers, IconX } from '../ui/icons.jsx';
+import { AvatarEditor } from '../people/AvatarEditor.jsx';
+import { Logo, LogoMark } from '../ui/bits.jsx';
+import { IconFlag, IconGrid, IconLayers, IconLogOut, IconMenu, IconPanel, IconTarget, IconUser, IconUsers, IconX } from '../ui/icons.jsx';
 
 function NavIcon({ icon, initial }) {
   if (icon === 'master') return <IconLayers />;
@@ -13,6 +14,7 @@ function NavIcon({ icon, initial }) {
   if (icon === 'people') return <IconUsers />;
   if (icon === 'grid') return <IconGrid />;
   if (icon === 'target') return <IconTarget />;
+  if (icon === 'flag') return <IconFlag />;
   return <span className="nav-initial">{initial}</span>;
 }
 
@@ -132,6 +134,7 @@ export function Sidebar() {
             <>
               <NavItem to="/" end label="Dashboard" icon="grid" />
               <NavItem to="/admin/targets" label="Targets" icon="target" />
+              <NavItem to="/admin/projects" label="Projects" icon="flag" />
 
               <p className="nav-section nav-wide">Trackers</p>
               <ul className="nav-wide">
@@ -195,7 +198,8 @@ export function Sidebar() {
         </nav>
 
         <div className="sidebar-foot">
-          <Initial name={profile?.display_name} />
+          {/* your own photo: click it to upload, adjust or remove (update v3, file 03) */}
+          <AvatarEditor personId={profile?.id} size={32} className="who-photo" />
           <div className="who">
             <span className="who-name truncate">{profile?.display_name}</span>
             <span className="who-role">

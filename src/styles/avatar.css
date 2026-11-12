@@ -1,0 +1,391 @@
+/* Profile photos (update v3, file 03): the shared avatar, stacks, the photo button, and the
+   dropdown that shows people with their photos. */
+
+.avatar {
+  --av: 28px;
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--av);
+  height: var(--av);
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--av-bg, var(--raised));
+  color: var(--av-fg, var(--text));
+  font-family: var(--font-sans);
+  font-size: max(9px, calc(var(--av) * 0.42));
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.avatar-letter {
+  display: block;
+}
+
+.avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.avatar.has-photo .avatar-img {
+  opacity: 1;
+}
+
+/* No photo: the first letter on a muted tone, always the same for the same person.
+   Not the status colours (grey / blue / green) and not the Reels / Feed colours. */
+.avatar[data-tone="0"] {
+  --av-bg: #4d2c3a; /* rose */
+  --av-fg: #f3c8d6;
+}
+
+.avatar[data-tone="1"] {
+  --av-bg: #1d4442; /* teal */
+  --av-fg: #a8e2d9;
+}
+
+.avatar[data-tone="2"] {
+  --av-bg: #4b401d; /* ochre */
+  --av-fg: #ecdba0;
+}
+
+.avatar[data-tone="3"] {
+  --av-bg: #4d2745; /* magenta */
+  --av-fg: #f1c1e2;
+}
+
+.avatar[data-tone="4"] {
+  --av-bg: #4e2e25; /* brick */
+  --av-fg: #f1cabb;
+}
+
+.avatar[data-tone="5"] {
+  --av-bg: #45403a; /* sand */
+  --av-fg: #e8dfd0;
+}
+
+/* photo + name on one line */
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.person-name {
+  min-width: 0;
+}
+
+/* overlapping photos */
+.avatar-stack {
+  --stack-ring: var(--panel);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.avatar-stack .avatar {
+  box-shadow: 0 0 0 2px var(--stack-ring);
+}
+
+.avatar-stack .avatar + .avatar {
+  margin-left: calc(var(--av) * -0.28);
+}
+
+.avatar-more {
+  background: var(--raised-hi);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: max(8px, calc(var(--av) * 0.34));
+  letter-spacing: -0.04em;
+}
+
+/* ------------------------------------------------------------ the photo as a button (change it) */
+.avatar-btn {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+}
+
+.avatar-btn .avatar {
+  transition: filter 0.15s, opacity 0.15s;
+}
+
+.avatar-btn:hover .avatar {
+  filter: brightness(1.14);
+}
+
+.avatar-btn[aria-busy="true"] .avatar {
+  opacity: 0.5;
+}
+
+.avatar-btn-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--raised-hi);
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--panel);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+
+.avatar-btn:hover .avatar-btn-badge,
+.avatar-btn:focus-visible .avatar-btn-badge,
+.avatar-btn[aria-expanded="true"] .avatar-btn-badge {
+  opacity: 1;
+  transform: none;
+}
+
+.menu-item--danger {
+  color: var(--danger-light);
+}
+
+.menu-item svg {
+  flex: none;
+  color: var(--text-dim);
+}
+
+.menu-item--danger svg {
+  color: inherit;
+}
+
+/* ------------------------------------------------------------ a dropdown with photos (PIC) */
+.pselect {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.pselect-label {
+  min-width: 0;
+}
+
+.pselect--filter {
+  width: auto;
+  max-width: 230px;
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border-radius: var(--r-pill);
+  color: var(--text-dim);
+}
+
+.pselect--filter.is-set {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.pselect--filter:has(.avatar) {
+  padding-left: 8px;
+}
+
+.pselect--field {
+  width: 100%;
+}
+
+.pselect.is-warn {
+  color: var(--danger-light);
+}
+
+.pselect[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.pselect-pop {
+  padding: 6px;
+}
+
+.pselect-list {
+  display: grid;
+  gap: 1px;
+}
+
+.pselect-option {
+  gap: 10px;
+}
+
+.pselect-option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--raised) 75%, transparent);
+}
+
+.pselect-option.is-warn {
+  color: var(--danger-light);
+}
+
+.pselect-option-text {
+  min-width: 0;
+}
+
+.pselect-hint {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.pselect-noavatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 50%, transparent);
+  border-radius: 50%;
+}
+
+.pselect-tick {
+  flex: none;
+  margin-left: auto;
+  color: var(--accent) !important;
+}
+
+/* ------------------------------------------------------------ where avatars sit */
+/* sidebar footer: your own photo */
+.who-photo .avatar-btn-badge {
+  box-shadow: 0 0 0 2px var(--panel);
+}
+
+/* People page */
+.people-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.people-who .people-name {
+  min-width: 0;
+}
+
+/* content table: PIC column */
+.cell-person {
+  width: 100%;
+}
+
+/* dashboard tables: the name cells */
+.dash-name .person {
+  font-weight: 500;
+}
+
+/* Targets page rows */
+.ttable tbody th[scope="row"] .person {
+  width: 100%;
+}
+
+/* tracker list on the dashboard */
+.choose-people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.choose-people .avatar-stack {
+  --stack-ring: var(--ink);
+}
+
+/* history tab: the person's photo where the timeline dot was */
+.h-entry {
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.h-who {
+  position: relative;
+  display: grid;
+  margin-top: 1px;
+}
+
+.history::before {
+  left: 9.5px;
+}
+
+.h-who .avatar {
+  box-shadow: 0 0 0 3px var(--panel);
+}
+
+.comment-body {
+  margin-left: 38px;
+}
+
+/* progress module: lanes per person, and "you" on My work */
+.lane-name .person {
+  display: flex;
+}
+
+.hl-who {
+  margin-right: 8px;
+  vertical-align: -5px;
+}
+
+/* New content (Admin in a team tracker): choose the PIC by photo */
+.new-pics {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.new-pics legend {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.new-pic-list {
+  display: grid;
+  gap: 2px;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.new-pic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  color: var(--text);
+  font-size: var(--fs-body);
+  cursor: pointer;
+}
+
+.new-pic:hover {
+  background: var(--raised);
+}
+
+.new-pic input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.new-pic.is-on {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.new-pic:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -5,11 +5,11 @@ import { useMonth } from '../data/MonthContext.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { STATUS_LABELS, STATUS_ORDER, TYPE_LABELS } from '../lib/fields.js';
-import { isInMonth, monthName } from '../lib/time.js';
+import { monthName } from '../lib/time.js';
+import { PersonSelect } from '../people/PersonSelect.jsx';
 import { buildColumns } from './columns.jsx';
+import { NO_PIC } from './useContentFilters.js';
 import { IconPlus, IconSearch } from '../ui/icons.jsx';
-
-const NO_PIC = '__none';
 
 function FilterSelect({ label, value, onChange, options }) {
   return (
@@ -50,37 +50,17 @@ function HeaderCell({ header }) {
   );
 }
 
-/** The content table (02 §2): month-scoped, filterable, sortable; click a row for the drawer. */
-export function ContentTable({ view, items, onOpen, onCreate, openId }) {
+/**
+ * The content table (02 §2): month-scoped, filterable, sortable; click a row for the drawer.
+ * `filters` comes from useContentFilters() on the page: the status board uses the same ones.
+ * `items` are the page's items (for the PIC filter's list of people).
+ */
+export function ContentTable({ view, items, filters, onOpen, onCreate, openId }) {
   const t = useTracker();
   const toast = useToast();
   const { month } = useMonth();
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('');
-  const [type, setType] = useState('');
-  const [brand, setBrand] = useState('');
-  const [pic, setPic] = useState(''); // '' every PIC · NO_PIC needs a PIC · a person's id
-  const [allMonths, setAllMonths] = useState(false);
+  const f = filters;
   const [sorting, setSorting] = useState([{ id: 'publish_date', desc: false }]);
-
-  const scoped = useMemo(
-    () => (allMonths ? items : items.filter((i) => !i.publish_date || isInMonth(i.publish_date, month))),
-    [items, allMonths, month],
-  );
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase();
-    return scoped.filter((i) => {
-      if (status && i.status !== status) return false;
-      if (type === 'none' ? i.type : type && i.type !== type) return false;
-      if (brand && i.brand_id !== brand) return false;
-      if (pic === NO_PIC ? i.pic_id : pic && i.pic_id !== pic) return false;
-      if (q && !`${i.content ?? ''}\n${i.caption ?? ''}`.toLocaleLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [scoped, query, status, type, brand, pic]);
-
-  const filtersOn = Boolean(query || status || type || brand || pic);
 
   const showPillars = view.brandChoices.some((b) => (t.pillarsByBrand[b.id] ?? []).length > 0);
 
@@ -96,13 +76,16 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
     [view.showBrand, view.showPic, showPillars, t.brandsById, t.peopleById],
   );
 
+  // PIC filter: photo + name for everyone active in the tracker or named on an item
   const picOptions = useMemo(() => {
     if (!view.showPic) return [];
     const ids = new Set([...t.team.filter((p) => p.is_active).map((p) => p.id), ...items.filter((i) => i.pic_id).map((i) => i.pic_id)]);
     const people = [...ids]
-      .map((id) => [id, t.peopleById[id]?.display_name ?? 'Former member'])
-      .sort((a, b) => a[1].localeCompare(b[1]));
-    return items.some((i) => !i.pic_id) ? [...people, [NO_PIC, 'Needs a PIC']] : people;
+      .map((id) => ({ value: id, label: t.peopleById[id]?.display_name ?? 'Former member', personId: id }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const options = [{ value: '', label: 'Every PIC' }, ...people];
+    if (items.some((i) => !i.pic_id)) options.push({ value: NO_PIC, label: 'Needs a PIC', tone: 'warn' });
+    return options;
   }, [view.showPic, t.team, t.peopleById, items]);
 
   const inlineSave = async (item, patch) => {
@@ -112,7 +95,7 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
   };
 
   const table = useReactTable({
-    data: filtered,
+    data: f.filtered,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -129,26 +112,19 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
   const wrapRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const onScroll = useCallback(() => setScrolled((wrapRef.current?.scrollLeft ?? 0) > 2), []);
-  const clearFilters = () => {
-    setQuery('');
-    setStatus('');
-    setType('');
-    setBrand('');
-    setPic('');
-  };
 
   let empty = null;
   if (!rows.length) {
-    if (filtersOn) {
+    if (f.on) {
       empty = (
         <div className="empty">
           <strong>Nothing matches these filters.</strong>
-          <button type="button" className="link-btn" onClick={clearFilters}>
+          <button type="button" className="link-btn" onClick={f.clear}>
             Clear filters
           </button>
         </div>
       );
-    } else if (allMonths) {
+    } else if (f.allMonths) {
       empty = (
         <div className="empty">
           <strong>No content yet.</strong>Add the first one with New content.
@@ -168,7 +144,7 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
       <div className="section-head">
         <h2 id="content-title">Content</h2>
         <p className="section-meta">
-          {allMonths ? 'All months' : `${monthName(month)}, plus items with no date`} ·{' '}
+          {f.allMonths ? 'All months' : `${monthName(month)}, plus items with no date`} ·{' '}
           <span className="mono">{rows.length}</span> {rows.length === 1 ? 'item' : 'items'}
         </p>
       </div>
@@ -183,21 +159,21 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
           <span className="sr-only">Search content or caption</span>
           <input
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={f.query}
+            onChange={(e) => f.setQuery(e.target.value)}
             placeholder="Search content or caption"
           />
         </label>
         <FilterSelect
           label="Status"
-          value={status}
-          onChange={setStatus}
+          value={f.status}
+          onChange={f.setStatus}
           options={[['', 'All statuses'], ...STATUS_ORDER.map((s) => [s, STATUS_LABELS[s]])]}
         />
         <FilterSelect
           label="Type"
-          value={type}
-          onChange={setType}
+          value={f.type}
+          onChange={f.setType}
           options={[
             ['', 'All types'],
             ['reels', `▶ ${TYPE_LABELS.reels}`],
@@ -208,16 +184,19 @@ export function ContentTable({ view, items, onOpen, onCreate, openId }) {
         {view.showBrand && (
           <FilterSelect
             label="Brand"
-            value={brand}
-            onChange={setBrand}
+            value={f.brand}
+            onChange={f.setBrand}
             options={[['', 'All brands'], ...view.brandChoices.map((b) => [b.id, b.name])]}
           />
         )}
-        {view.showPic && (
-          <FilterSelect label="PIC" value={pic} onChange={setPic} options={[['', 'Every PIC'], ...picOptions]} />
+        {view.showPic && <PersonSelect label="PIC" value={f.pic} onChange={f.setPic} options={picOptions} />}
+        {f.on && (
+          <button type="button" className="link-btn toolbar-clear" onClick={f.clear}>
+            Clear filters
+          </button>
         )}
         <label className="switch toolbar-switch">
-          <input type="checkbox" checked={allMonths} onChange={(e) => setAllMonths(e.target.checked)} />
+          <input type="checkbox" checked={f.allMonths} onChange={(e) => f.setAllMonths(e.target.checked)} />
           <span className="switch-track" aria-hidden="true" />
           Show all months
         </label>

@@ -13,6 +13,8 @@ import { TrackerRoute, TrackerView } from './pages/TrackerPages.jsx';
 import { Dashboard } from './admin/Dashboard.jsx';
 import { PeoplePage } from './admin/PeoplePage.jsx';
 import { TargetsPage } from './admin/TargetsPage.jsx';
+import { ProjectsPage } from './projects/ProjectsPage.jsx';
+import { ProjectsProvider } from './projects/ProjectsProvider.jsx';
 import { ToastProvider } from './ui/Toast.jsx';
 import { ConfirmProvider } from './ui/Confirm.jsx';
 import { PageHeader } from './layout/PageHeader.jsx';
@@ -52,7 +54,10 @@ function SignedInLayout() {
   return (
     <AppDataProvider key={user?.id}>
       <AppDataGate>
-        <Shell />
+        {/* projects are loaded once for the whole app: calendars, reminders and the popup read them */}
+        <ProjectsProvider>
+          <Shell />
+        </ProjectsProvider>
       </AppDataGate>
     </AppDataProvider>
   );
@@ -94,6 +99,14 @@ export function AppRoutes() {
             element={
               <RequireAdmin>
                 <TargetsPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="admin/projects"
+            element={
+              <RequireAdmin>
+                <ProjectsPage />
               </RequireAdmin>
             }
           />

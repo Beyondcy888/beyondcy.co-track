@@ -1,0 +1,243 @@
+/* Brand cards on the Admin Dashboard (update v3, 04 §2).
+   Dark cards; each has a soft glow in its brand's colour from the top-left corner, a faint
+   large logo in the background, a small logo, the name and the uploads of the month.
+   Text sits on the dark area; the colour is used for the glow and the logo only. */
+
+.brands {
+  margin-bottom: 44px;
+}
+
+/* nine equal cards in one row; on narrower screens the row scrolls sideways and the cards keep their size */
+.brand-cards {
+  --gap: 12px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max(156px, calc((100% - (var(--count, 9) - 1) * var(--gap)) / var(--count, 9)));
+  gap: var(--gap);
+  margin: -6px -4px 0;
+  padding: 6px 4px 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+/* more cards waiting on a side: that edge fades out */
+.brand-cards[data-more="true"] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
+}
+
+.brand-cards[data-before="true"] {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 56px), transparent);
+}
+
+.brand-cards[data-before="true"][data-more="true"] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 56px, #000 calc(100% - 56px), transparent);
+}
+
+.brand-cards::-webkit-scrollbar {
+  height: 8px;
+}
+
+.brand-cards::-webkit-scrollbar-thumb {
+  border-radius: var(--r-pill);
+  background: var(--line);
+}
+
+.brand-cards-item {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.brand-card {
+  --brand: var(--accent);
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 1 / 1.06;
+  min-height: 166px;
+  padding: 14px 14px 13px;
+  overflow: hidden;
+  border-radius: var(--r-panel);
+  background: linear-gradient(160deg, #1e1d25 0%, #17161c 62%, #151419 100%);
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s;
+}
+
+.brand-card:hover {
+  color: var(--text);
+}
+
+/* a hairline edge that catches the brand colour at the glowing corner */
+.brand-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand) 70%, rgb(255 255 255 / 0.5)) 0%,
+    color-mix(in srgb, var(--brand) 22%, rgb(255 255 255 / 0.07)) 26%,
+    rgb(255 255 255 / 0.04) 60%,
+    rgb(255 255 255 / 0.09) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* the text at the bottom always sits on dark */
+.brand-card::after {
+  content: "";
+  position: absolute;
+  inset: 44% 0 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgb(19 18 24 / 0.82) 12%, rgb(19 18 24 / 0));
+  pointer-events: none;
+}
+
+.bc-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(86% 70% at 0% 0%, color-mix(in srgb, var(--brand) 58%, transparent) 0%, color-mix(in srgb, var(--brand) 20%, transparent) 42%, transparent 74%),
+    radial-gradient(60% 46% at 100% 100%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 70%);
+  opacity: 0.82;
+  transition: opacity 0.25s;
+}
+
+/* the faint large logo: the logo's own shape, filled with the brand colour */
+.bc-ghost {
+  position: absolute;
+  right: -9cqi;
+  bottom: 13cqi;
+  z-index: -2;
+  width: calc(58cqi * max(1, var(--logo-ratio, 1)));
+  height: calc(58cqi / min(1, var(--logo-ratio, 1)));
+  max-height: 74cqi;
+  background: var(--brand);
+  opacity: 0.1;
+  -webkit-mask: var(--logo) right center / contain no-repeat;
+  mask: var(--logo) right center / contain no-repeat;
+  transform: rotate(-9deg);
+  transform-origin: 100% 100%;
+  transition: opacity 0.25s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.bc-logo {
+  display: flex;
+  align-items: flex-start;
+  height: 38px;
+}
+
+.bc-logo img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 62cqi;
+  max-height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.4));
+}
+
+/* a brand without a logo yet: its initial */
+.bc-initial {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bc-open {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--text);
+  opacity: 0;
+  transform: translate(-4px, 4px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.bc-text {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bc-name {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bc-count {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.bc-num {
+  font-size: clamp(2rem, 25cqi, 2.75rem);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.bc-unit {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.brand-card:not(.is-static):hover,
+.brand-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 0.42), 0 0 28px color-mix(in srgb, var(--brand) 13%, transparent);
+}
+
+.brand-card:not(.is-static):hover .bc-glow,
+.brand-card:focus-visible .bc-glow {
+  opacity: 1;
+}
+
+.brand-card:not(.is-static):hover .bc-ghost,
+.brand-card:focus-visible .bc-ghost {
+  opacity: 0.17;
+  transform: rotate(-6deg) scale(1.04);
+}
+
+.brand-card:hover .bc-open,
+.brand-card:focus-visible .bc-open {
+  opacity: 1;
+  transform: none;
+}
+
+.brand-card:focus-visible {
+  outline-offset: 3px;
+}

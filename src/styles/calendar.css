@@ -296,3 +296,279 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================ update v3 (files 04 §3, 05 §3, 06)
+   Drag a chip to another day to change its date; projects on their deadline. */
+
+.cal-head {
+  align-items: baseline;
+}
+
+.cal-drag-hint {
+  margin-left: auto;
+  opacity: 0.75;
+}
+
+/* a day cell is a container: the PIC's photo shows on a chip only when there's room */
+.cal-chips > li,
+.nodate-list > li,
+.day-pop-list > li {
+  container-type: inline-size;
+}
+
+.chip-pic {
+  flex: none;
+  margin-left: auto;
+  margin-right: -4px;
+}
+
+.chip-pic.avatar-stack {
+  --stack-ring: var(--raised);
+}
+
+@container (max-width: 128px) {
+  .chip-pic {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------ what can move, what can't */
+.chip.is-movable {
+  cursor: grab;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.chip.is-movable:active {
+  cursor: grabbing;
+}
+
+/* the original stays in place, faded, while its copy is carried */
+.chip.is-dragging {
+  opacity: 0.35;
+}
+
+/* Uploaded content is locked: a small lock, and a not-allowed cursor while pressing */
+.chip-lock {
+  flex: none;
+  margin-left: auto;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chip-lock + .chip-pic {
+  margin-left: 0;
+}
+
+.chip.is-locked:hover .chip-lock,
+.chip.is-locked:focus-visible .chip-lock {
+  opacity: 1;
+}
+
+.chip.is-locked:active {
+  cursor: not-allowed;
+}
+
+/* the carried copy */
+.chip--lifted {
+  width: max-content;
+  min-width: 150px;
+  max-width: 260px;
+  min-height: 28px;
+  padding: 3px 10px;
+  background: var(--raised-hi);
+  box-shadow: 0 14px 30px rgb(0 0 0 / 0.5), 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  cursor: grabbing;
+  transform: rotate(-2deg) scale(1.03);
+}
+
+.chip--lifted .chip-pic {
+  display: inline-flex;
+}
+
+/* just dropped: one quiet pulse so the eye finds it */
+.chip.is-landed {
+  animation: chip-land 0.7s ease-out;
+}
+
+@keyframes chip-land {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+/* ------------------------------------------------------------ drop targets */
+.cal-section.is-dragging .cal-add {
+  cursor: inherit;
+}
+
+.cal-section.is-dragging .cal-add:hover {
+  background: none;
+}
+
+.cal-section.is-dragging .cal-add-hint {
+  opacity: 0 !important;
+}
+
+.cal td.cal-day.is-over {
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+.cal-drop {
+  position: absolute;
+  inset: 3px;
+  z-index: 2;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 80%, transparent);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.nodate {
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.nodate.is-target {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--text-dim) 60%, transparent);
+}
+
+.nodate.is-over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.nodate-drop {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+.nodate.is-over .nodate-drop {
+  color: var(--text);
+}
+
+/* the "+N more" list steps out of the way while one of its chips is carried */
+.day-pop.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* while dragging: hold over a month name to turn the page */
+.cal-edges {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.cal-edges-hint {
+  font-size: var(--fs-xs);
+}
+
+.cal-edge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 55%, transparent);
+  border-radius: var(--r-pill);
+  color: var(--text);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.cal-edge.is-over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* from the reminder's "Show this week in the calendar" */
+.cal tr.is-flash td {
+  animation: week-flash 2.4s ease-out;
+}
+
+@keyframes week-flash {
+  0%,
+  45% {
+    background: color-mix(in srgb, var(--accent) 13%, transparent);
+    box-shadow: inset 0 1.5px 0 color-mix(in srgb, var(--accent) 80%, transparent), inset 0 -1.5px 0 color-mix(in srgb, var(--accent) 80%, transparent);
+  }
+
+  100% {
+    background: transparent;
+    box-shadow: inset 0 1.5px 0 transparent, inset 0 -1.5px 0 transparent;
+  }
+}
+
+/* ------------------------------------------------------------ projects: outlined, with a flag */
+.chip--project {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-dim) 62%, transparent);
+}
+
+.chip--project:hover {
+  background: color-mix(in srgb, var(--raised) 80%, transparent);
+  box-shadow: inset 0 0 0 1px var(--text-dim);
+}
+
+.chip--project.chip--lifted {
+  background: var(--panel);
+  box-shadow: 0 14px 30px rgb(0 0 0 / 0.5), inset 0 0 0 1px var(--text);
+}
+
+.chip-flag {
+  flex: none;
+  color: var(--text);
+}
+
+.chip-kind {
+  color: var(--text-dim);
+}
+
+.chip--project .chip-pic.avatar-stack {
+  --stack-ring: var(--ink);
+}
+
+/* done: dimmed, with a check mark */
+.chip--project.is-done {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-dim) 30%, transparent);
+  color: var(--text-dim);
+}
+
+.chip--project.is-done .chip-flag {
+  color: var(--status-uploaded);
+}
+
+.chip--project.is-done .chip-text {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--text-dim) 60%, transparent);
+}
+
+.chip--project.is-done .chip-pic {
+  opacity: 0.55;
+}
+
+.legend-flag {
+  color: var(--text);
+}
+
+/* phones: a project is a small outlined square among the status marks */
+.mark-project {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+.mark-project.is-done {
+  box-shadow: inset 0 0 0 1.5px var(--text-dim);
+}

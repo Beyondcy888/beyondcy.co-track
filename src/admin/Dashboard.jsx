@@ -6,20 +6,26 @@ import { TrackerProvider, useTracker } from '../data/TrackerProvider.jsx';
 import { useToday } from '../data/useNow.js';
 import { PageHeader } from '../layout/PageHeader.jsx';
 import { brandNamer, CalendarLegend, MonthCalendar } from '../calendar/MonthCalendar.jsx';
+import { useCalendarMoves } from '../calendar/useCalendarMoves.js';
 import { ItemDrawer } from '../drawer/ItemDrawer.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { STATUS_LABELS, STATUS_ORDER, TYPE_LABELS } from '../lib/fields.js';
-import { formatAchievement, groupStats, performance } from '../lib/progress.js';
-import { daysInMonth, monthLabel } from '../lib/time.js';
+import { groupStats, performance } from '../lib/progress.js';
+import { monthLabel } from '../lib/time.js';
+import { Person } from '../people/Avatar.jsx';
+import { PersonSelect } from '../people/PersonSelect.jsx';
+import { useProjects } from '../projects/ProjectsProvider.jsx';
+import { SummaryBoxes } from '../track/SummaryBoxes.jsx';
 import { Spinner, TypeIcon } from '../ui/bits.jsx';
 import { IconAlert, IconCheck } from '../ui/icons.jsx';
-import { Gauge, IllusCards, IllusHourglass, IllusPhone } from './illustrations.jsx';
+import { BrandCards } from './BrandCards.jsx';
 import { AchievementCell, SplitCell, StatusChip, TrackerList } from './perf.jsx';
 
 const DASH_VIEW = { key: 'dashboard', showBrand: true, brandChoices: null };
 const NO_PIC = '__none';
+const NO_FILTERS = { tracker: '', brand: '', pic: '', type: '', status: '' };
 
-/** "/" for Admin: the month across every tracker (09 §9). */
+/** "/" for Admin: the month across every tracker (09 §9, reordered by update v3 file 04). */
 export function Dashboard() {
   const { month } = useMonth();
   return (
@@ -29,102 +35,7 @@ export function Dashboard() {
   );
 }
 
-// ------------------------------------------------------------------ 9.1 summary boxes
-function StatBox({ label, value, line, illus, className = '' }) {
-  return (
-    <li className={`stat-box ${className}`}>
-      <p className="stat-label">{label}</p>
-      <p className="stat-num mono">{value}</p>
-      <p className="stat-line">{line}</p>
-      <span className="stat-illus" aria-hidden="true">
-        {illus}
-      </span>
-    </li>
-  );
-}
-
-function TypeWord({ type, children }) {
-  return (
-    <span className={`tw tw--${type}`}>
-      <TypeIcon type={type} size={11} />
-      {children}
-    </span>
-  );
-}
-
-function SummaryBoxes({ total, month, today }) {
-  const t = total.target;
-  const u = total.uploaded;
-  const todayMonth = today.slice(0, 7);
-  const daysLeft = daysInMonth(month) - Number(today.slice(8));
-  const when =
-    month === todayMonth ? (daysLeft === 0 ? 'last day' : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`) : month < todayMonth ? 'month ended' : 'not started yet';
-  const status = total.status;
-  const paceText =
-    status.key === 'on_track' ? 'On pace' : status.key === 'behind' ? `${status.behind} behind pace` : status.key === 'none' ? 'No targets set yet' : status.label;
-
-  return (
-    <ul className="stat-boxes" aria-label="This month in numbers">
-      <StatBox
-        label="Total target"
-        value={t ? t.total : '–'}
-        line={
-          t ? (
-            <>
-              <TypeWord type="reels">{t.reels} Reels</TypeWord>
-              <TypeWord type="feed">{t.feed} Feed</TypeWord>
-            </>
-          ) : (
-            <Link to={`/admin/targets?month=${month}`}>Set targets</Link>
-          )
-        }
-        illus={<IllusCards />}
-      />
-      <StatBox
-        label="Uploaded"
-        value={u.total}
-        line={
-          <>
-            <TypeWord type="reels">
-              {u.reels}/{t ? t.reels : '–'} Reels
-            </TypeWord>
-            <TypeWord type="feed">
-              {u.feed}/{t ? t.feed : '–'} Feed
-            </TypeWord>
-          </>
-        }
-        illus={<IllusPhone />}
-      />
-      <StatBox
-        label="Remaining"
-        value={!t ? '–' : total.over > 0 ? `+${total.over} over` : total.remaining}
-        className={total.over > 0 ? 'is-over' : ''}
-        line={
-          t ? (
-            <>
-              <span>
-                {Math.max(t.reels - u.reels, 0)} Reels · {Math.max(t.feed - u.feed, 0)} Feed to go
-              </span>
-              <span>{when}</span>
-            </>
-          ) : (
-            <span>{when}</span>
-          )
-        }
-        illus={<IllusHourglass />}
-      />
-      <StatBox
-        label="Achievement"
-        value={formatAchievement(total.achievement)}
-        className={total.achievement != null && total.achievement >= 100 ? 'is-done' : ''}
-        line={<span className={`stat-status stat-status--${status.key}`}>{paceText}</span>}
-        illus={<Gauge value={total.achievement} />}
-      />
-    </ul>
-  );
-}
-
-// ------------------------------------------------------------------ 9.2 all-brands calendar
+// ------------------------------------------------------------------ all-brands calendar
 function FilterSelect({ label, value, onChange, options }) {
   return (
     <label className="filter">
@@ -140,9 +51,15 @@ function FilterSelect({ label, value, onChange, options }) {
   );
 }
 
+/**
+ * Every brand's content on its publish date and every project on its deadline.
+ * Admin can drag any content (except Uploaded) and any project to another day (04 §3).
+ */
 function AllBrandsCalendar({ items, onOpen }) {
   const app = useAppData();
-  const [f, setF] = useState({ tracker: '', brand: '', pic: '', type: '', status: '' });
+  const ps = useProjects();
+  const moves = useCalendarMoves();
+  const [f, setF] = useState(NO_FILTERS);
   const set = (key) => (value) =>
     setF((prev) => {
       const next = { ...prev, [key]: value };
@@ -154,38 +71,54 @@ function AllBrandsCalendar({ items, onOpen }) {
   const picOptions = useMemo(() => {
     const ids = new Set(app.people.filter((p) => p.role_id && !app.rolesById[p.role_id]?.is_admin && p.is_active).map((p) => p.id));
     items.forEach((i) => i.pic_id && ids.add(i.pic_id));
-    const list = [...ids].map((id) => [id, app.peopleById[id]?.display_name ?? 'Former member']).sort((a, b) => a[1].localeCompare(b[1]));
-    return items.some((i) => !i.pic_id) ? [...list, [NO_PIC, 'Needs a PIC']] : list;
+    const list = [...ids]
+      .map((id) => ({ value: id, label: app.peopleById[id]?.display_name ?? 'Former member', personId: id }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+    const options = [{ value: '', label: 'Every PIC' }, ...list];
+    if (items.some((i) => !i.pic_id)) options.push({ value: NO_PIC, label: 'Needs a PIC', tone: 'warn' });
+    return options;
   }, [app, items]);
 
   const filtered = useMemo(
     () =>
-      items.filter(
-        (i) =>
-          (!f.tracker || i.role_id === f.tracker) &&
-          (!f.brand || i.brand_id === f.brand) &&
-          (f.pic === NO_PIC ? !i.pic_id : !f.pic || i.pic_id === f.pic) &&
-          (f.type === 'none' ? !i.type : !f.type || i.type === f.type) &&
-          (!f.status || i.status === f.status),
-      ),
+      f.type === 'project'
+        ? []
+        : items.filter(
+            (i) =>
+              (!f.tracker || i.role_id === f.tracker) &&
+              (!f.brand || i.brand_id === f.brand) &&
+              (f.pic === NO_PIC ? !i.pic_id : !f.pic || i.pic_id === f.pic) &&
+              (f.type === 'none' ? !i.type : !f.type || i.type === f.type) &&
+              (!f.status || i.status === f.status),
+          ),
     [items, f],
   );
+
+  // projects have no brand, type or content status: they show with "All types" or "Projects",
+  // and follow the Tracker and PIC filters through the people they're assigned to
+  const projects = useMemo(() => {
+    if ((f.type && f.type !== 'project') || f.brand || f.status || f.pic === NO_PIC) return [];
+    return ps.projects.filter(
+      (p) => (!f.tracker || p.assignees.some((id) => app.peopleById[id]?.role_id === f.tracker)) && (!f.pic || p.assignees.includes(f.pic)),
+    );
+  }, [ps.projects, f, app.peopleById]);
+
   const on = Object.values(f).some(Boolean);
 
   const tools = (
     <div className="toolbar dash-cal-tools">
       <FilterSelect label="Tracker" value={f.tracker} onChange={set('tracker')} options={[['', 'All trackers'], ...app.trackers.map((r) => [r.id, r.name])]} />
       <FilterSelect label="Brand" value={f.brand} onChange={set('brand')} options={[['', 'All brands'], ...brandOptions]} />
-      <FilterSelect label="PIC" value={f.pic} onChange={set('pic')} options={[['', 'Every PIC'], ...picOptions]} />
+      <PersonSelect label="PIC" value={f.pic} onChange={set('pic')} options={picOptions} />
       <FilterSelect
         label="Type"
         value={f.type}
         onChange={set('type')}
-        options={[['', 'All types'], ['reels', `▶ ${TYPE_LABELS.reels}`], ['feed', `▦ ${TYPE_LABELS.feed}`], ['none', 'No type']]}
+        options={[['', 'All types'], ['reels', `▶ ${TYPE_LABELS.reels}`], ['feed', `▦ ${TYPE_LABELS.feed}`], ['none', 'No type'], ['project', '⚑ Projects']]}
       />
       <FilterSelect label="Status" value={f.status} onChange={set('status')} options={[['', 'All statuses'], ...STATUS_ORDER.map((s) => [s, STATUS_LABELS[s]])]} />
       {on && (
-        <button type="button" className="link-btn" onClick={() => setF({ tracker: '', brand: '', pic: '', type: '', status: '' })}>
+        <button type="button" className="link-btn" onClick={() => setF(NO_FILTERS)}>
           Clear filters
         </button>
       )}
@@ -193,10 +126,22 @@ function AllBrandsCalendar({ items, onOpen }) {
     </div>
   );
 
-  return <MonthCalendar items={filtered} onOpen={onOpen} brandName={brandNamer(app.brandsById)} title="All brands" tools={tools} />;
+  return (
+    <MonthCalendar
+      items={filtered}
+      projects={projects}
+      onOpen={onOpen}
+      onOpenProject={ps.openProject}
+      brandName={brandNamer(app.brandsById)}
+      showPic
+      title="All brands"
+      tools={tools}
+      drag={moves}
+    />
+  );
 }
 
-// ------------------------------------------------------------------ 9.3 performance per PIC
+// ------------------------------------------------------------------ performance per PIC
 function personLabel(app, id) {
   const p = app.peopleById[id];
   if (!p) return 'Former member';
@@ -219,7 +164,7 @@ function PicTable({ pics, total }) {
       <div className="table-wrap dash-wrap">
         <table className="table dash-table pic-table">
           <colgroup>
-            <col style={{ width: 130 }} />
+            <col style={{ width: 170 }} />
             <col style={{ width: 170 }} />
             <col style={{ width: 160 }} />
             <col style={{ width: 160 }} />
@@ -253,7 +198,7 @@ function PicTable({ pics, total }) {
             {rows.map((r) => (
               <tr key={r.key}>
                 <th scope="row" className="dash-name">
-                  {personLabel(app, r.picId)}
+                  <Person id={r.picId} name={personLabel(app, r.picId)} size={28} />
                 </th>
                 <td className="dim">{app.rolesById[r.roleId]?.name ?? '–'}</td>
                 <td>
@@ -317,7 +262,7 @@ function RemainingCell({ stats }) {
   return <span className="mono">{stats.remaining}</span>;
 }
 
-// ------------------------------------------------------------------ 9.4 detail per PIC and brand
+// ------------------------------------------------------------------ detail per PIC and brand
 /** Admin's "Status & notes": an inline text box that saves on blur. */
 function NoteCell({ row, label }) {
   const t = useTracker();
@@ -410,7 +355,7 @@ function DetailTable({ cells, total, needPic, month }) {
         <table className="table dash-table detail-table">
           <colgroup>
             <col style={{ width: 124 }} />
-            <col style={{ width: 104 }} />
+            <col style={{ width: 148 }} />
             <col style={{ width: 136 }} />
             <col style={{ width: 82 }} />
             <col style={{ width: 82 }} />
@@ -475,7 +420,7 @@ function DetailTable({ cells, total, needPic, month }) {
                 <tr key={r.key} className={r.target ? '' : 'is-untargeted'}>
                   <td className="dim">{period}</td>
                   <th scope="row" className="stick-pic dash-name">
-                    {pic}
+                    <Person id={r.picId} name={pic} size={20} />
                   </th>
                   <td className="stick-brand">{brand}</td>
                   <td>{num(r.target?.reels)}</td>
@@ -536,8 +481,10 @@ function DashboardView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const openId = searchParams.get('item');
 
-  const brandRole = useMemo(() => Object.fromEntries(app.roleBrands.map((rb) => [rb.brand_id, rb.role_id])), [app.roleBrands]);
-  const perf = useMemo(() => performance({ items: t.items, targets: t.targets, month, today, brandRole }), [t.items, t.targets, month, today, brandRole]);
+  const perf = useMemo(
+    () => performance({ items: t.items, targets: t.targets, month, today, brandRole: app.roleOfBrand }),
+    [t.items, t.targets, month, today, app.roleOfBrand],
+  );
 
   const trackerRows = useMemo(
     () =>
@@ -549,7 +496,7 @@ function DashboardView() {
           month,
           today,
         }),
-        people: app.people.filter((p) => p.role_id === role.id && p.is_active).map((p) => p.display_name),
+        people: app.people.filter((p) => p.role_id === role.id && p.is_active).map((p) => p.id),
         brands: app.brandsForRole(role.id).map((b) => b.name),
       })),
     [app, t.items, t.targets, month, today],
@@ -602,7 +549,8 @@ function DashboardView() {
 
       {t.status === 'ready' && (
         <div className={`dash-body${stale ? ' is-stale' : ''}`} aria-busy={stale}>
-          <SummaryBoxes total={perf.total} month={month} today={today} />
+          <SummaryBoxes stats={perf.total} month={month} today={today} targetsHref={`/admin/targets?month=${month}`} />
+          <BrandCards items={t.items} month={month} />
           <AllBrandsCalendar items={t.items} onOpen={openItem} />
           <PicTable pics={perf.pics} total={perf.total} />
           <DetailTable cells={perf.cells} total={perf.total} needPic={perf.needPic} month={month} />

@@ -46,6 +46,35 @@ export default function DevCheck() {
       profile ? `${profile.display_name} · role ${profile.role_id} · is_admin ${profile.role?.is_admin}` : 'no profile',
     );
 
+    // 3. Update v3 (06_update_v3.sql): for anyone signed in. Nothing is written.
+    {
+      const people = await supabase.from('people').select('id, display_name, avatar_path, role_id, role_name, is_admin, is_active');
+      add('v3: the people view lists everyone (names + photos)', !people.error && (people.data?.length ?? 0) >= 2, people.error?.message ?? `${people.data?.length} people`);
+      const email = await supabase.from('people').select('email').limit(1);
+      add('v3: the people view has no emails', Boolean(email.error), email.error ? email.error.message : 'email column is readable: NOT expected');
+      const projects = await supabase.from('projects').select('id, project_assignees(profile_id)');
+      add(
+        profile?.role?.is_admin ? 'v3: Admin reads every project' : 'v3: projects readable (only the ones you are assigned to)',
+        !projects.error,
+        projects.error?.message ?? `${projects.data?.length} projects`,
+      );
+      if (!profile?.role?.is_admin && projects.data) {
+        const mine = projects.data.every((p) => p.project_assignees.some((a) => a.profile_id === profile.id));
+        add('v3: every project you can see is assigned to you', mine, mine ? 'yes' : 'a project you are not assigned to is visible');
+      }
+      const files = await supabase.storage.from('avatars').list(profile?.id ?? 'none');
+      add('v3: the avatars bucket answers', !files.error, files.error?.message ?? `${files.data?.length} files in your folder`);
+      // changing a photo that isn't yours: staff are refused; Admin passes the check and is told the person doesn't exist
+      const rpc = await supabase.rpc('set_profile_avatar', { p_profile_id: '00000000-0000-0000-0000-000000000000', p_path: null });
+      const expected = profile?.role?.is_admin ? 'Person not found.' : 'You can only change your own photo.';
+      add(`v3: set_profile_avatar on someone else → "${expected}"`, rpc.error?.message === expected, rpc.error?.message ?? 'no error: NOT expected');
+      if (!profile?.role?.is_admin) {
+        const p = await supabase.from('projects').insert({ name: 'Connection test (should be refused)', due_date: '2030-01-01' }).select('id');
+        add('v3: staff cannot create a project (Admin only)', Boolean(p.error), p.error ? p.error.message : 'NOT refused');
+        if (p.data?.[0]) await supabase.from('projects').delete().eq('id', p.data[0].id);
+      }
+    }
+
     if (profile?.role?.is_admin) {
       const [r, b, p] = await Promise.all([
         supabase.from('roles').select('id'),

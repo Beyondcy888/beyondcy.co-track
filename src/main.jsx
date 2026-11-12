@@ -12,6 +12,13 @@ import './styles/calendar.css';
 import './styles/admin.css';
 import './styles/banner.css';
 import './styles/dashboard.css';
+import './styles/modal.css';
+import './styles/avatar.css';
+import './styles/boxes.css';
+import './styles/brandcards.css';
+import './styles/reminder.css';
+import './styles/board.css';
+import './styles/projects.css';
 import App from './App.jsx';
 
 const root = createRoot(document.getElementById('root'));

@@ -8,6 +8,10 @@
 //   - pic_id: staff can't set it (the DB uses them); Admin sends it only where a choice is needed
 //   - banner files live at tracker-banners/<role_id>/<file>
 //   - always use the row the database returns
+// Update v3 (07_DATABASE_V3.md):
+//   - names and photos of everyone come from the `people` view (no emails)
+//   - a photo changes only through set_profile_avatar(); files live at avatars/<profile_id>/<file>
+//   - projects: never send status-derived or name columns (completed_*, created_*, updated_*)
 import { supabase } from '../lib/supabase.js';
 
 const ITEM_SELECT = '*, comments(count)';
@@ -16,6 +20,9 @@ const TARGET_SELECT =
   'id, month, role_id, brand_id, profile_id, target_reels, target_feed, target_total, note, set_by, updated_at';
 const BANNER_SELECT = 'role_id, image_path, position_y, updated_by, updated_by_name, updated_at';
 const BANNERS = 'tracker-banners';
+const PEOPLE_SELECT = 'id, display_name, avatar_path, avatar_updated_at, role_id, role_name, is_admin, is_active';
+const AVATARS = 'avatars';
+const PROJECT_SELECT = '*, project_assignees(profile_id)';
 
 /**
  * Flatten `comments: [{ count }]` into `comment_count`. Rows without the embed
@@ -27,6 +34,17 @@ export function normalizeItem(row, prev) {
   const { comments, ...rest } = row;
   const count = Array.isArray(comments) ? comments[0]?.count ?? 0 : rest.comment_count ?? prev?.comment_count ?? 0;
   return { ...rest, comment_count: count };
+}
+
+/**
+ * Flatten `project_assignees: [{ profile_id }]` into `assignees: [id]`. Rows without the
+ * embed (realtime payloads, already-normalized rows) keep their own or the previous list.
+ */
+export function normalizeProject(row, prev) {
+  if (!row) return row;
+  const { project_assignees, ...rest } = row;
+  const assignees = Array.isArray(project_assignees) ? project_assignees.map((a) => a.profile_id) : rest.assignees ?? prev?.assignees ?? [];
+  return { ...rest, assignees };
 }
 
 const notAllowed = (message) => ({ data: null, error: { message } });
@@ -48,8 +66,115 @@ export const supabaseApi = {
   listBrands: () => supabase.from('brands').select('id, name, instagram_handle, sort_order').order('sort_order'),
   listRoleBrands: () => supabase.from('role_brands').select('role_id, brand_id'),
   listPillars: () => supabase.from('brand_pillars').select('brand_id, name, sort_order').order('sort_order'),
-  /** Profiles this person may see (self, teammates, Admin; Admin sees all). No emails. */
-  listProfiles: () => supabase.from('profiles').select('id, display_name, role_id, is_active').order('display_name'),
+  /** Everyone's name, photo and tracker (the `people` view: every signed-in person may read it; no emails). */
+  listProfiles: () => supabase.from('people').select(PEOPLE_SELECT).order('display_name'),
+
+  // ------------------------------------------------------------ profile photos (private bucket `avatars`)
+  /** Signed URLs (1 hour) for many photos in one request → { data: { [path]: url } }. */
+  async avatarUrls(paths) {
+    if (!paths.length) return { data: {}, error: null };
+    const { data, error } = await supabase.storage.from(AVATARS).createSignedUrls(paths, 3600);
+    if (error) return { data: null, error };
+    const urls = {};
+    for (const row of data ?? []) if (row.signedUrl && !row.error) urls[row.path] = row.signedUrl;
+    return { data: urls, error: null };
+  },
+
+  /** Upload to avatars/<profileId>/<uuid>.<ext>; returns { data: { path } }. */
+  async uploadAvatar(profileId, blob, ext = 'webp') {
+    const path = `${profileId}/${newId()}.${ext}`;
+    const { error } = await supabase.storage
+      .from(AVATARS)
+      .upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: '3600' });
+    return { data: error ? null : { path }, error };
+  },
+
+  /** The only way to set (path) or remove (null) a photo: yourself, or Admin for anyone. */
+  setAvatar: (profileId, path) => supabase.rpc('set_profile_avatar', { p_profile_id: profileId, p_path: path }),
+
+  removeAvatarFile: (path) => supabase.storage.from(AVATARS).remove([path]),
+
+  /** The stored photo as a Blob (for "Adjust": no cross-origin canvas trouble). */
+  async downloadAvatar(path) {
+    const { data, error } = await supabase.storage.from(AVATARS).download(path);
+    return { data: data ?? null, error };
+  },
+
+  // ------------------------------------------------------------ projects
+  /** Projects this person may see (staff: the ones they're assigned to; Admin: all), with assignees. */
+  async listProjects() {
+    const result = await supabase.from('projects').select(PROJECT_SELECT).order('due_date').order('created_at');
+    return { data: result.data?.map((row) => normalizeProject(row)) ?? null, error: result.error };
+  },
+
+  /** Admin only (RLS). Assignees are added separately with addProjectAssignees. */
+  async createProject({ name, description, dueDate }) {
+    const result = await supabase
+      .from('projects')
+      .insert({ name, description: description || null, due_date: dueDate })
+      .select(PROJECT_SELECT)
+      .single();
+    return { data: result.data ? normalizeProject(result.data) : null, error: result.error };
+  },
+
+  /**
+   * Admin: name, description, due_date and status. Assigned staff: status only (the
+   * database silently keeps everything else). RLS turns a refused update into "0 rows".
+   */
+  async updateProject(id, patch) {
+    const { data, error } = await supabase.from('projects').update(patch).eq('id', id).select(PROJECT_SELECT);
+    if (error) return { data: null, error };
+    if (!data?.length) return notAllowed('This project is no longer available to you.');
+    return { data: normalizeProject(data[0]), error: null };
+  },
+
+  async deleteProject(id) {
+    const { data, error } = await supabase.from('projects').delete().eq('id', id).select('id');
+    if (error) return { data: null, error };
+    if (!data?.length) return notAllowed('Only Admin can do this.');
+    return { data: data[0], error: null };
+  },
+
+  /** Admin only. Only active staff can be assigned (the database says so in words). */
+  async addProjectAssignees(projectId, profileIds) {
+    if (!profileIds.length) return { data: [], error: null };
+    return supabase
+      .from('project_assignees')
+      .insert(profileIds.map((id) => ({ project_id: projectId, profile_id: id })))
+      .select('profile_id');
+  },
+
+  async removeProjectAssignees(projectId, profileIds) {
+    if (!profileIds.length) return { data: [], error: null };
+    return supabase.from('project_assignees').delete().eq('project_id', projectId).in('profile_id', profileIds).select('profile_id');
+  },
+
+  /** A project's history (activity_log, role_id 'projects'): Admin can read it. */
+  listProjectHistory: (projectId) =>
+    supabase
+      .from('activity_log')
+      .select('*')
+      .eq('role_id', 'projects')
+      .eq('changes->>project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(100),
+
+  /**
+   * Live updates for projects and their assignees (no filter: RLS decides what arrives).
+   * `onChange(table, event, row)`; returns an unsubscribe function.
+   */
+  subscribeProjects(onChange) {
+    const channel = supabase.channel(`projects-${Math.random().toString(36).slice(2, 8)}`);
+    for (const table of ['projects', 'project_assignees']) {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, (p) =>
+        onChange(table, p.eventType, p.eventType === 'DELETE' ? p.old : p.new),
+      );
+    }
+    channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
 
   // ------------------------------------------------------------ items
   async listItems(roleId) {

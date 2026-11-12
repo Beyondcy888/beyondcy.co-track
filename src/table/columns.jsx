@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { STATUS_ORDER } from '../lib/fields.js';
 import { firstLink, referenceLines, safeHref, shortUrl } from '../lib/links.js';
+import { Person } from '../people/Avatar.jsx';
 import { NeedsPicBadge, RelativeTime, StatusPill, TypePill } from '../ui/bits.jsx';
 import { DateInput } from '../ui/DateInput.jsx';
 import { IconComment, IconExternal } from '../ui/icons.jsx';
@@ -106,7 +107,7 @@ function InstagramCell({ row }) {
 
 function PicCell({ row, getValue }) {
   if (!row.original.pic_id) return <NeedsPicBadge />;
-  return <span className="cell-text">{getValue()}</span>;
+  return <Person id={row.original.pic_id} name={getValue()} size={20} className="cell-person" />;
 }
 
 function EditedCell({ row, table }) {
@@ -181,7 +182,7 @@ export function buildColumns({ showBrand, showPic, showPillars, brandName, perso
         header: 'PIC',
         cell: PicCell,
         sortUndefined: 'last',
-        size: 140,
+        size: 156,
       }),
     col.accessor((r) => r.updated_at, { id: 'updated', header: 'Last edited', cell: EditedCell, size: 160 }),
     col.accessor((r) => r.comment_count ?? 0, {

@@ -3,6 +3,8 @@ import { useTracker } from '../data/TrackerProvider.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { fieldLabel, TYPE_LABELS, TYPE_ORDER } from '../lib/fields.js';
 import { DateInput } from '../ui/DateInput.jsx';
+import { Person } from '../people/Avatar.jsx';
+import { PersonSelect } from '../people/PersonSelect.jsx';
 import { NeedsPicBadge, TypeIcon } from '../ui/bits.jsx';
 import { useToast } from '../ui/Toast.jsx';
 
@@ -335,7 +337,7 @@ export function PicField({ item, onSaved }) {
       <div className="field">
         <p className="field-label">PIC</p>
         <p className="field-static">
-          {item.pic_id ? currentName : <NeedsPicBadge />}
+          {item.pic_id ? <Person id={item.pic_id} name={currentName} size={28} suffix={item.pic_id === t.me ? ' (you)' : null} /> : <NeedsPicBadge />}
         </p>
         <p className="field-hint">The PIC is who this content counts for. Only Admin Beyondcy changes it.</p>
       </div>
@@ -345,8 +347,7 @@ export function PicField({ item, onSaved }) {
   const members = t.membersOf(item.role_id);
   const formerPic = item.pic_id && !members.some((m) => m.id === item.pic_id);
 
-  async function change(e) {
-    const next = e.target.value || null;
+  async function change(next) {
     if (!next) return;
     setBusy(true);
     const result = await t.updateItem(item.id, { pic_id: next });
@@ -365,27 +366,23 @@ export function PicField({ item, onSaved }) {
       error={error}
       hint={item.pic_id ? 'Whose target this content counts toward.' : 'Needs a PIC: it counts toward no one until you choose.'}
     >
-      <select
+      <PersonSelect
         id={id}
-        className={`select${item.pic_id ? '' : ' needs-pic'}`}
+        label="PIC"
+        variant="field"
+        className={item.pic_id ? '' : 'needs-pic'}
         value={item.pic_id ?? ''}
         onChange={change}
         disabled={busy}
-        aria-invalid={error || !item.pic_id ? 'true' : undefined}
-        aria-describedby={error ? `${id}-error` : `${id}-hint`}
-      >
-        {!item.pic_id && <option value="">Choose a PIC</option>}
-        {formerPic && (
-          <option value={item.pic_id} disabled>
-            {currentName} (no longer in this tracker)
-          </option>
-        )}
-        {members.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.display_name}
-          </option>
-        ))}
-      </select>
+        invalid={Boolean(error) || !item.pic_id}
+        describedBy={error ? `${id}-error` : `${id}-hint`}
+        width={300}
+        options={[
+          ...(item.pic_id ? [] : [{ value: '', label: 'Choose a PIC', disabled: true }]),
+          ...(formerPic ? [{ value: item.pic_id, label: currentName, personId: item.pic_id, hint: '(no longer in this tracker)', disabled: true }] : []),
+          ...members.map((p) => ({ value: p.id, label: p.display_name, personId: p.id })),
+        ]}
+      />
     </Field>
   );
 }

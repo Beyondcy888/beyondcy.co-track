@@ -7,6 +7,8 @@ The Beyondcy content tracker: React + Vite + Supabase, deployed to GitHub Pages.
 
 The full spec is in [`docs/`](docs/) (start with `docs/00_START_HERE.md`; **update v2** is `docs/09_UPDATE_V2.md`, which wins over 01–08; the split into three repos is `docs/10_SPLIT_INTO_3_REPOS.md`). The build's task list is [`docs/TASKS.md`](docs/TASKS.md). The database SQL is in [`supabase/`](supabase/) (reference only; the owner runs it, including `04_update_v2.sql`).
 
+**v3 at a glance (`docs/UPDATE-V3/`, wins over everything before it):** profile photos for everyone (upload, round crop, remove; the first letter until then), **Projects** (Admin assigns one-off jobs to staff; they appear on the deadline in calendars and open in a centred popup), the four summary boxes on every tracker page, a **this-week reminder** beside the progress module, **dragging** content to another day in every calendar (Uploaded is locked; Undo in the toast), a **status board** under the calendar, and nine **brand cards** with logos on Admin's Dashboard. Database: `supabase/06_update_v3.sql`.
+
 **v2 at a glance:** Beyondcy logo + green accent, full-width pages, a Notion-like sidebar (pin / hide / peek at the left edge, Ctrl/Cmd+\), a banner per tracker, targets per person × brand split into Reels + Feed (Admin's Targets page), a PIC on every item, the ring chart next to the dots, and Admin's Dashboard.
 
 ## Run it
@@ -43,16 +45,25 @@ src/
   auth/         session provider, login, reset password, route guards, blocked screens
   data/         API (every query in one place), app data, tracker provider (realtime), month, timers
   layout/       shell, sidebar (pinned / hidden / peek, rail ≤1100px, drawer ≤720px; state in sidebarState.js), page header
-  track/        the progress module: big number, Reels/Feed ring (TypeRing), legend + mix note, dots, lanes
+  track/        the progress module: big number, Reels/Feed ring (TypeRing), legend + mix note, dots, lanes;
+                the four summary boxes (SummaryBoxes, shared with the Dashboard) and the this-week reminder
   banner/       the tracker banner: upload (WebP, ≤1500px), reposition, signed URLs, "⋯" page menu
   table/        content table (TanStack Table v8): filters, sorting, inline Type + Publish date
   drawer/       item drawer: details (save on blur, live conflicts), comments, history
-  calendar/     month grid (Monday first, WIB today), chips, +N more, No date list
-  admin/        Dashboard (boxes, all-brands calendar, per-PIC + detail tables, trackers), Targets page, People
+  calendar/     month grid (Monday first, WIB today), chips, +N more, No date list; drag a chip to
+                another day (@dnd-kit/core; useCalendarMoves = the save, toast and Undo); project chips
+  board/        the status board: Not started / Planned / Uploaded (display only)
+  people/       profile photos: Avatar (photo or first letter), the photo menu + round crop, PersonSelect
+  projects/     Projects: provider (data + realtime), Admin page, the form, the centred popup
+  config/       brandStyle.js: each brand's logo and colour for the Dashboard's brand cards
+  admin/        Dashboard (boxes, brand cards, all-brands calendar, per-PIC + detail tables, trackers),
+                Targets page, People
   pages/        tracker routes and per-layout page config
-  ui/           toasts, confirm dialog, popover, date input, icons
+  ui/           toasts (with an action, e.g. Undo), confirm dialog, modal, popover, date input, icons
   dev/          DEV ONLY: /dev-check and the mock (not in production builds)
   styles/       tokens.css (design tokens) + one stylesheet per area
+public/brand-logos/   the nine brand logos used on the Dashboard (WebP)
+design-assets/        source files that are NOT published (the owner's logo folders)
 ```
 
 ## Deploy (GitHub Pages)

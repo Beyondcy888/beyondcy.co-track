@@ -7,6 +7,8 @@ const NO_ACCESS = "You don't have access to this tracker.";
 const OFFLINE = "Can't reach the server. Check your connection and try again.";
 export const BANNER_TOO_BIG = 'Banner must be 5 MB or smaller.';
 export const BANNER_WRONG_TYPE = 'Use a JPG, PNG or WebP image.';
+/** Where only Admin may act (projects, other people's photos): what a refusal by the database means. */
+export const ONLY_ADMIN = 'Only Admin can do this.';
 
 function messageOf(err) {
   if (!err) return '';
@@ -21,12 +23,16 @@ export function labelMissing(message) {
   );
 }
 
-export function friendlyError(err) {
+/**
+ * `refused`: what a row-level-security refusal means in this place. The default suits the
+ * tracker ("You don't have access to this tracker."); projects and photos pass ONLY_ADMIN.
+ */
+export function friendlyError(err, { refused = NO_ACCESS } = {}) {
   if (!err) return null;
   const message = messageOf(err);
   const code = typeof err === 'object' ? err.code : undefined;
 
-  if (code === '42501' || /row-level security|permission denied/i.test(message)) return NO_ACCESS;
+  if (code === '42501' || /row-level security|permission denied/i.test(message)) return refused;
   if (code === 'PGRST116') return 'This item is no longer available. It may have been deleted.';
   // storage (banner uploads)
   if (/exceeded the maximum allowed size|payload too large|entity too large/i.test(message)) return BANNER_TOO_BIG;

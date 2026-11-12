@@ -10,6 +10,101 @@
 
 ---
 
+## Update v3 (`docs\UPDATE-V3\`, files 00–07) · started 12 Nov 2026
+
+> **Resuming?** This section is the live list. Spec: `docs\UPDATE-V3\` in this repo (it arrived as `<WEB>\UPDATE 1.0\beyondcy-update-v3\` and was moved in at W9).
+> **Owner's instructions for this update (12 Nov):** do everything in the md files · where a file says "up to you", go all out on design · the SQL (`06_update_v3.sql`) is **already run** in Supabase, never change the DB · when the work is done, **move/organise** `beyondcy-website`, `tracker-brand-logo` and `UPDATE 1.0` into the three repo folders · **do NOT push**: start localhost so the owner can look first, and run `.\deploy.ps1` **only when the owner says "push"**.
+> `<WEB>` = `D:\BEHOMY\Beyondcy-Web`.
+
+### W0 · Read and plan
+- [x] Read files 00–07, the SQL, the 6 reference images, `deploy.ps1`
+- [x] State at start: all three repos clean, on `main`, nothing unpushed (site 64ff9e0, dash 984cbca, track 5f6ef01)
+- [x] Read the tracker code (`src/`) and the portfolio (`beyondcy-website\beyondcy-website\`, Next.js 15 App Router)
+- [x] Signed-out check that v3 DB objects exist: `people`, `projects`, `project_assignees`, `profiles.avatar_path`, `set_profile_avatar` all answer 42501 "permission denied" (a missing table answers PGRST205), so the SQL is in place
+
+> **State on 12 Nov 2026, 21:10 WIB: everything in files 01–07 is built, tested in mock mode, and waiting for the owner to look at localhost. NOTHING is committed or pushed** (all three repos: `main`, 0 ahead of origin; tracker 164 changed/new files, portfolio 107, dash none).
+> **Next step when resuming:** the owner looks at localhost → says "push" → `.\deploy.ps1 -Message "Update v3"` from `<WEB>` (give `-Message`: without it the script asks a question and waits) → owner sets `beyondcy.co` Pages Source = GitHub Actions → check the three live links.
+> **Local servers** (restart them if the machine was restarted): tracker with the real database `npm run dev` → http://localhost:5173 · tracker demo with sample data `npm run mock` → http://localhost:5174 (`?as=admin|dika|excel|arum|zaki|ilyas|anne`, or the "Mock data" switch bottom-left) · portfolio `npm run dev` in `<WEB>\beyondcy.co` → http://localhost:3000.
+> **Gotcha:** run npm/vitest from an UPPERCASE drive path (`cd /c/ && cd "D:/BEHOMY/..."` in Git Bash, or PowerShell `Set-Location D:\...`): from `d:\` vitest fails with "Cannot read properties of undefined (reading 'config')". In Git Bash, `BASE_PATH=/beyondcy.co` is rewritten into a Windows path: build the portfolio's github.io version from PowerShell.
+> **QA tools** (outside the repos, session scratchpad `qa/`): `cdp.mjs` (headless Chrome driver), `qa-v3.mjs` (139 interaction checks: `node qa-v3.mjs [drag|admin|projects|photos|page]`), `shots.mjs` / `el.mjs` (screenshots), `prep-logos.mjs` (re-exports the 9 logos), `portfolio-shots.mjs`, `live-check.mjs`. They are throwaway: rebuild them if the scratchpad is gone.
+
+### W1 · File 01: GitHub Pages
+- [x] Checked 12 Nov: **dash 200, track 200 (both live)**, portfolio 404 (its Pages build never ran; it now needs Source = GitHub Actions, see W10). All three repos clean and pushed at the start; no `CNAME` anywhere
+- [x] Reported to the owner in the hand-over message (what is live, and the one OWNER ACTION left)
+
+### W2 · File 02: portfolio into `beyondcy.co` (done by a sub-agent, then re-checked independently)
+- [x] Phase A: Next.js 15.5 App Router + React 19, plain JS, CSS Modules; 5 routes (Home, About, Work, Contact, Login); no keys, no services, no `.env`; 4.5 MB; static export possible
+- [x] Phase B: "Stay tuned" files removed; the project copied to the repo root; `.gitignore` merged; no `CNAME`, no `.env*`
+- [x] Phase C: `output: 'export'`, `trailingSlash`, `images.unoptimized`; base path from ONE variable (`BASE_PATH`, set only in `.github/workflows/deploy.yml` → `next.config.mjs` → `NEXT_PUBLIC_BASE_PATH` → `lib/site.js` `asset()` / `siteUrl`); workflow "Deploy portfolio" (fails if `out/` has a `CNAME` or a login page)
+- [x] Found on the way: the repo name has a dot, so Next.js reads `.co` as a file extension and breaks the Home link under `/beyondcy.co` → `skipTrailingSlashRedirect` + `pageHref()` in `lib/site.js`
+- [x] Phase D: login kept in `app/_login/` (private folder: not routed, not built) + `content/login.js`, each with the "not connected yet" comment; both Login links commented out; `/login/` answers 404; no "/login" anywhere in `out/`
+- [x] Phase E step 1: both builds clean (root and `BASE_PATH=/beyondcy.co`, 0 warnings); served like GitHub Pages under `/beyondcy.co/`: 4 pages × 1440 and 390 with no console errors, no broken images, no root-absolute URL, no Login link (re-checked by me with a separate script after the sub-agent's own checks); dev server on 3000 clean
+- [x] Added by the sub-agent (owner may drop them): a dark 404 page (`app/not-found.js`), canonical + `og:url` tags (`pageLinks()`), `docs/README-original.md` (the team's Indonesian README)
+- [ ] Phase E steps 3–6: push, Pages Source = GitHub Actions, verify the live link, then delete `beyondcy.co\.original-from-team\` (W10)
+
+### W3 · File 03: profile photos
+- [x] `api.js`: `people` view, `createSignedUrls` batch, upload / `set_profile_avatar` / remove / download
+- [x] Shared people store in `AppDataProvider` (loaded after sign-in, refreshed on tab focus and after a change; URL cache by path + updated_at; renewed 5 min before expiry)
+- [x] `<Avatar>` 20 / 28 / 40 / 64: initial on one of six muted tones chosen by id; the letter stays until the photo has loaded (never a broken image)
+- [x] Photo menu (Upload / Adjust / Remove) + crop dialog (round preview, zoom slider, drag, wheel, pinch, arrow keys; 512×512 WebP 0.85; JPG/PNG/WebP ≤ 10 MB)
+- [x] Sidebar footer (own photo) · People page (Admin, anyone)
+- [x] Photos in: comments, history, PIC column / filters / field (custom dropdown), New content PIC list, lanes, My work, status board, reminder, calendar chips, project list / chips / popup, dashboard tables, tracker list, Targets rows
+- [x] Mock mode: people view, avatars storage, `set_profile_avatar` rules + messages, four demo photos
+- [x] QA (23 checks): upload → crop → save (512×512 WebP at `<id>/<uuid>.webp`), Adjust, Remove, GIF refused, staff can't change another photo (database message shown), Admin changes anyone's, new user shows the initial, no emails in the directory
+
+### W4 · File 04: Admin Dashboard
+- [x] §1 Shared `<SummaryBoxes>`: Martian Mono 800 (font link has 800), number up to 5.25rem, illustration up to 250px (1.95×) behind the text, box still 172px. Checked at 2400 / 1920 / 1440 / 1024 (2×2) / 390 and with "1,206" / "1,150"
+- [x] §2 Brand cards: 9 logos + colours (`public/brand-logos/`, `src/config/brandStyle.js`, table in `docs/07`); equal cards, corner glow, faint big logo, name + uploads of the selected month; links per the spec; sideways scroll under ~1900px with a fading edge
+- [x] §3 All-brands calendar: drag (content of any tracker, and projects), projects on their deadline, "Projects" in the Type filter, PIC photo on chips
+- [x] Order: greeting → boxes → brand cards → calendar → per PIC → detail → trackers; photos in both tables
+- [x] QA (15 checks)
+
+### W5 · File 05: tracker pages
+- [x] Page order: banner → greeting → boxes → progress module + this-week reminder → lanes → table → calendar → status board
+- [x] §1 Boxes on every page, from the same `pageStats()` as the module (checked equal on 6 page types)
+- [x] §2 This-week reminder: personal line per page type, Mon–Sun WIB, Not started + Planned only, projects, Overdue group, counter, "all done" and "empty" states, "Show this week in the calendar" (scrolls + flashes the week), beside the legend from ~1500px of module width, below it otherwise
+- [x] §3 Calendar drag (`@dnd-kit/core`): day ↔ day, ↔ No date, "+N more" list, Uploaded locked (lock icon, tooltip, hint toast), projects Admin-only, optimistic + toast with Undo (8s), failure → back + database message, press-and-hold on touch, month switch by holding over the month name
+- [x] §4 Status board: 3 columns, big count + split, cards (brand, title, type, PIC photo + name, date, fields left, comments, Instagram link, Overdue), same items as the table (shared filters), "Show all", sideways scroll on narrow screens, "x of y target", "Mine only"
+- [x] `lib/week.js` + tests (week range, reminder, board, deadlines)
+- [x] QA: drag 23 checks, pages 45 checks
+
+### W6 · File 06: Projects
+- [x] `api.js` + `ProjectsProvider`: list with assignees, create, edit (assignee differences), status, due date, delete; realtime on both tables
+- [x] Sidebar: Dashboard · Targets · Projects · Trackers · People; route `/admin/projects`
+- [x] Projects page: New project dialog (name with counter, description, deadline, assignees with photos grouped by tracker + search), Upcoming / Overdue / Done, mark done, Edit, Delete
+- [x] Project popup (`?project=<id>`): centred modal, focus kept inside, Esc / backdrop / close, full-screen sheet on phones; name, deadline + hint, status, description with links, assignees, created by, Mark as done / Reopen, Edit / Delete (Admin), History (Admin)
+- [x] Project chips in tracker calendars and the dashboard calendar; done = dimmed + check
+- [x] Mock mode: projects, assignees, row-level rules + messages, six demo projects
+- [x] QA (33 checks): all four "Done when" points of file 06
+
+### W7 · QA
+- [x] `npm test`: 89 green (was 54). `npm run build` clean; `dist/` has the 9 logos, no mock code, no dev-check, no secret
+- [x] Mock-mode browser QA: Admin, Dika, Excel (Master + brand), Arum (My work + Master), Zaki, at 2400 / 1920 / 1440 / 1024 / 390; screenshots reviewed; no console errors on any page
+- [x] 139 scripted interaction checks pass (drag 23, dashboard 15, projects 33, photos 23, pages 45)
+- [x] Real app (`npm run dev`): signed out it lands on `/login` with no console errors; `/admin/projects` redirects to login; `/dev-check` loads
+- [!] **Not tested: the real database with a signed-in user** (no test logins here). The mock mirrors the SQL's rules, but the owner should, on localhost:5173: sign in as Admin and as one staff member, run `/dev-check` (it has v3 checks), upload a photo, create a project for two people in different trackers, drag a chip
+
+### W8 · Docs
+- [x] `docs/07_DECISIONS_AND_OPEN_ITEMS.md`: v3 section (owner's decisions, Claude's defaults, the logo table, build decisions, what is still open)
+- [x] `docs/00_START_HERE.md` item 12; tracker `README.md` (v3 at a glance + code map); `design-assets/README.md`; portfolio `README.md` (by the sub-agent)
+
+### W9 · Organise the folders (owner asked for this, 12 Nov)
+- [x] `UPDATE 1.0\beyondcy-update-v3\` → `beyondcy.co-track\docs\UPDATE-V3\` (8 md files, `references\`, `supabase\`); the duplicate `UPDATE 1.0\06_update_v3.sql` → `beyondcy.co-track\supabase\06_update_v3.sql`; empty `UPDATE 1.0\` removed
+- [x] `tracker-brand-logo\` → `beyondcy.co-track\design-assets\tracker-brand-logo\` (73 files, 4.3 MB: in git, not published)
+- [x] `beyondcy-website\` → its adapted content is the `beyondcy.co` repo; the untouched original folder was MOVED (not deleted) to `beyondcy.co\.original-from-team\` (git-ignored, 4.5 MB) so nothing is lost before the owner has checked. Delete it after the live site is verified
+- [x] `<WEB>` now holds only `beyondcy.co`, `beyondcy.co-dash`, `beyondcy.co-track`, `deploy.ps1`
+
+### W10 · Show the owner, then deploy
+- [x] Localhost running (12 Nov 21:06): 5173 tracker (real), 5174 tracker (sample data), 3000 portfolio
+- [x] Pre-flight of what `deploy.ps1` would commit: no secret-named file, no key pattern, no `CNAME`, largest file 1.7 MB
+- [ ] Owner looks and says "push"
+- [ ] `.\deploy.ps1 -Message "Update v3"` (only after the owner's go)
+- [!] OWNER ACTION, best done just before the push: github.com → `beyondcy.co` → Settings → Pages → Source = **GitHub Actions** (the portfolio now needs a build). If the push comes first, re-run "Deploy portfolio" in the Actions tab afterwards
+- [ ] Check the three live links; tracker: sign in, upload a photo, drag a chip
+- [ ] Owner's swaps, if any: brand logos / colours (`src/config/brandStyle.js`; Lahap + Beefix are both yellow, Behomy + Homy8 both orange), the Overdue group in the reminder, the portfolio's custom 404 page
+
+---
+
 ## Split into 3 repos (START-DEV-02/docs/10_SPLIT_INTO_3_REPOS.md) · started 9 Nov 2026
 
 > `<OLD>` = `D:\BEHOMY\beyondcy.co` · `<WEB>` = `D:\BEHOMY\Beyondcy-Web` (plain folder, not a repo).

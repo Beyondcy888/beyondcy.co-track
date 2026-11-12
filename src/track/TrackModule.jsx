@@ -11,10 +11,12 @@ import {
   groupStats,
   myBrandLanes,
   needPicCount,
+  pageStats,
   paceShort,
   personLanes,
   trackAriaLabel,
 } from '../lib/progress.js';
+import { Avatar, Person } from '../people/Avatar.jsx';
 import { monthName as nameOfMonth } from '../lib/time.js';
 import { animateTrack } from '../lib/motion.js';
 import { TypeCounts, TypeIcon } from '../ui/bits.jsx';
@@ -23,7 +25,7 @@ import { Dots } from './Dots.jsx';
 import { TypeRing } from './TypeRing.jsx';
 
 /** "12 / 25 · 48%": Martian Mono 700, the uploaded count in --text, "/ target" dim, % in green from 100%. */
-function Headline({ stats, caption }) {
+function Headline({ stats, caption, who = null }) {
   const { uploaded, target, achievement } = stats;
   const over = achievement != null && achievement >= 100;
   return (
@@ -45,7 +47,10 @@ function Headline({ stats, caption }) {
           </span>
         )}
       </p>
-      <p className="hl-caption">{caption}</p>
+      <p className="hl-caption">
+        {who}
+        {caption}
+      </p>
     </div>
   );
 }
@@ -131,8 +136,9 @@ function BrandLine({ items, brands, targets, month }) {
  *   Excel brand page: that brand · that brand only
  *   Behomy My work:   my total (PIC = me) · one lane per brand I have a target or uploads for
  *   Behomy Master:    team total · one lane per PIC, plus "By brand"
+ * `aside` is the this-week reminder (update v3, 05 §2): it sits in the empty area on the right.
  */
-export function TrackModule({ view, items }) {
+export function TrackModule({ view, items, aside = null }) {
   const t = useTracker();
   const { month } = useMonth();
   const today = useToday();
@@ -141,17 +147,14 @@ export function TrackModule({ view, items }) {
   const mName = nameOfMonth(month);
 
   const { head, lanes, team, needPic } = useMemo(() => {
-    let headStats;
+    // the same numbers as the four summary boxes above (05 §1): one function for both
+    const headStats = pageStats({ view, items, allItems: t.items, targets: t.targets, me: t.me, month, today });
     let list;
     if (view.lanes === 'brands') {
-      const brandIds = new Set(view.laneBrands.map((b) => b.id));
-      headStats = groupStats({ items, targetRows: t.targets.filter((r) => brandIds.has(r.brand_id)), month, today });
       list = brandLanes({ items, brands: view.laneBrands, targets: t.targets, month, today });
     } else if (view.lanes === 'me') {
-      headStats = groupStats({ items, targetRows: t.targets.filter((r) => r.profile_id === t.me), month, today });
       list = myBrandLanes({ items: t.items, brands: t.brands, targets: t.targets, me: t.me, month, today });
     } else {
-      headStats = groupStats({ items: t.items, targetRows: t.targets, month, today });
       list = personLanes({ items: t.items, people: t.team, targets: t.targets, month, today });
     }
     return {
@@ -179,8 +182,8 @@ export function TrackModule({ view, items }) {
         Progress in {mName}
       </h2>
 
-      <div className="track-top">
-        <Headline stats={head} caption={caption} />
+      <div className={`track-top${aside ? ' has-aside' : ''}`}>
+        <Headline stats={head} caption={caption} who={view.lanes === 'me' ? <Avatar id={t.me} size={20} className="hl-who" /> : null} />
         <TypeRing target={head.target} uploaded={head.uploaded} achievement={head.achievement} />
         <div className="track-words">
           {(head.target || !noTargetBox) && <p className="track-sentence">{head.target ? head.pace.sentence : noTarget}</p>}
@@ -209,6 +212,7 @@ export function TrackModule({ view, items }) {
             </Link>
           )}
         </div>
+        {aside && <div className="track-aside">{aside}</div>}
       </div>
 
       {singleLane && (
@@ -234,7 +238,7 @@ export function TrackModule({ view, items }) {
           {lanes.map((lane, i) => (
             <li key={lane.key} className="lane">
               <span className="lane-name truncate" title={lane.label}>
-                {lane.label}
+                {lane.kind === 'person' ? <Person id={lane.profileId} name={lane.label} size={20} /> : lane.label}
               </span>
               <div className="lane-track">
                 {lane.target ? (

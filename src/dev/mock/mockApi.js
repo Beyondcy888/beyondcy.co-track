@@ -7,6 +7,9 @@ const clone = (v) => JSON.parse(JSON.stringify(v));
 const wait = (ms = 90) => new Promise((r) => setTimeout(r, ms));
 const TRACKED = ['content', 'type', 'brief', 'caption', 'notes', 'publish_date', 'reference', 'content_pillars', 'instagram_url', 'brand_id', 'status', 'pic_id'];
 const BANNER_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const RLS_PROJECTS = { code: '42501', message: 'new row violates row-level security policy for table "projects"' };
+const RLS_ASSIGNEES = { code: '42501', message: 'new row violates row-level security policy for table "project_assignees"' };
+const RLS_STORAGE = { statusCode: '403', message: 'new row violates row-level security policy' };
 const inRange = (d, r) => !d || (d >= r.start && d <= r.end);
 
 export function createMockApi(store, personaRef) {
@@ -37,6 +40,59 @@ export function createMockApi(store, personaRef) {
     });
   const log = (entry) =>
     store.activity.push({ id: store.activity.length + 1, created_at: new Date().toISOString(), ...entry });
+
+  // ---------------------------------------------------------------- v3: projects (06_update_v3.sql §3)
+  const projectSubs = new Set();
+  const emitProject = (table, event, row) => projectSubs.forEach((fn) => fn(table, event, clone(row)));
+  const assigneesOf = (projectId) => store.projectAssignees.filter((a) => a.project_id === projectId).map((a) => a.profile_id);
+  const isMember = (projectId) => store.projectAssignees.some((a) => a.project_id === projectId && a.profile_id === me()?.id);
+  const canSeeProject = (p) => Boolean(me()?.is_active) && (isAdmin() || isMember(p.id));
+  const withAssignees = (p) => ({ ...p, project_assignees: assigneesOf(p.id).map((profile_id) => ({ profile_id })) });
+  const logProject = (action, project, changes, actor = me()) =>
+    log({ role_id: 'projects', item_id: null, actor_id: actor.id, actor_name: actor.display_name, action, summary: project.name, changes });
+
+  /** Mirror of projects_before_write(): staff may only change the status. */
+  function applyProjectUpdate(project, patch, actor) {
+    const admin = actor.role_id === 'admin' && actor.is_active;
+    const before = { ...project };
+    if (admin) {
+      if ('name' in patch) {
+        const name = String(patch.name ?? '').trim();
+        if (!name || name.length > 200) return { error: { code: '23514', message: 'new row for relation "projects" violates check constraint "projects_name_check"' } };
+        project.name = name;
+      }
+      if ('description' in patch) project.description = patch.description == null ? null : String(patch.description).trim() || null;
+      if ('due_date' in patch) {
+        if (!patch.due_date) return { error: { code: '23502', message: 'null value in column "due_date" of relation "projects" violates not-null constraint' } };
+        project.due_date = patch.due_date;
+      }
+    }
+    if ('status' in patch && patch.status !== project.status) {
+      project.status = patch.status;
+      if (patch.status === 'done') {
+        project.completed_at = new Date().toISOString();
+        project.completed_by = actor.id;
+        project.completed_by_name = actor.display_name;
+      } else {
+        project.completed_at = null;
+        project.completed_by = null;
+        project.completed_by_name = null;
+      }
+    }
+    project.updated_at = new Date().toISOString();
+    project.updated_by = actor.id;
+    project.updated_by_name = actor.display_name;
+    const changes = {};
+    for (const f of ['name', 'description', 'due_date', 'status']) {
+      if (before[f] !== project[f]) changes[f] = { old: before[f] ?? null, new: project[f] ?? null };
+    }
+    if (Object.keys(changes).length) {
+      const action = changes.status ? (project.status === 'done' ? 'project_completed' : 'project_reopened') : 'project_updated';
+      logProject(action, project, { ...changes, project_id: project.id }, actor);
+    }
+    emitProject('projects', 'UPDATE', project);
+    return { row: project };
+  }
 
   function applyUpdate(id, patch, actor) {
     const old = store.items.find((i) => i.id === id);
@@ -92,12 +148,140 @@ export function createMockApi(store, personaRef) {
     listBrands: () => ok(store.brands),
     listRoleBrands: () => ok(store.roleBrands),
     listPillars: () => ok(store.pillars),
+    /** The `people` view: everyone's name, tracker and photo for every signed-in person. No emails. */
     listProfiles: () =>
       ok(
-        store.people
-          .filter((p) => isAdmin() || p.id === me()?.id || p.role_id === myRole() || p.role_id === 'admin')
-          .map(({ id, display_name, role_id, is_active }) => ({ id, display_name, role_id, is_active })),
+        me()
+          ? store.people.map(({ id, display_name, avatar_path, avatar_updated_at, role_id, is_active }) => {
+              const role = store.roles.find((r) => r.id === role_id);
+              return { id, display_name, avatar_path, avatar_updated_at, role_id, role_name: role?.name ?? null, is_admin: Boolean(role?.is_admin), is_active };
+            })
+          : [],
       ),
+
+    // -------------------------------------------------------------- profile photos (bucket avatars)
+    async avatarUrls(paths) {
+      await wait(40);
+      if (!me()) return { data: null, error: { message: 'Unauthorized' } };
+      const urls = {};
+      for (const path of paths) if (store.files.has(path)) urls[path] = store.files.get(path);
+      return { data: urls, error: null };
+    },
+    async uploadAvatar(profileId, blob, ext = 'webp') {
+      if (!me() || (profileId !== me().id && !isAdmin())) return fail(RLS_STORAGE);
+      if (!BANNER_TYPES.includes(blob.type)) return fail(`mime type ${blob.type || 'unknown'} is not supported`);
+      if (blob.size > 2 * 1024 * 1024) return fail({ statusCode: '413', message: 'The object exceeded the maximum allowed size' });
+      const path = `${profileId}/${uid()}.${ext}`;
+      store.files.set(path, URL.createObjectURL(blob));
+      store.blobs.set(path, blob);
+      return ok({ path });
+    },
+    /** Mirror of set_profile_avatar(): yourself, or Admin for anyone; the file must be in that person's folder. */
+    async setAvatar(profileId, path) {
+      if (!me() || (me().id !== profileId && !isAdmin())) return fail('You can only change your own photo.');
+      if (path != null && path.split('/')[0] !== profileId) return fail("The photo must be stored in that person's folder.");
+      const person = store.people.find((p) => p.id === profileId);
+      if (!person) return fail('Person not found.');
+      person.avatar_path = path ? path.trim() || null : null;
+      person.avatar_updated_at = new Date().toISOString();
+      return ok(null);
+    },
+    async removeAvatarFile(path) {
+      if (!me() || (path.split('/')[0] !== me().id && !isAdmin())) return ok([]); // RLS: nothing deleted
+      const url = store.files.get(path);
+      if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+      store.files.delete(path);
+      store.blobs.delete(path);
+      return ok([]);
+    },
+    async downloadAvatar(path) {
+      await wait(60);
+      if (store.blobs.has(path)) return { data: store.blobs.get(path), error: null };
+      const url = store.files.get(path);
+      if (!url) return { data: null, error: { message: 'Object not found' } };
+      const blob = await (await fetch(url)).blob();
+      return { data: blob, error: null };
+    },
+
+    // -------------------------------------------------------------- projects
+    listProjects: () =>
+      ok(
+        store.projects
+          .filter(canSeeProject)
+          .sort((a, b) => (a.due_date === b.due_date ? (a.created_at < b.created_at ? -1 : 1) : a.due_date < b.due_date ? -1 : 1))
+          .map(withAssignees),
+      ),
+    async createProject({ name, description, dueDate }) {
+      if (!isAdmin()) return fail(RLS_PROJECTS);
+      const trimmed = String(name ?? '').trim();
+      if (!trimmed || trimmed.length > 200) return fail({ code: '23514', message: 'new row for relation "projects" violates check constraint "projects_name_check"' });
+      if (!dueDate) return fail({ code: '23502', message: 'null value in column "due_date" of relation "projects" violates not-null constraint' });
+      const now = new Date().toISOString();
+      const row = {
+        id: uid(), name: trimmed, description: description == null ? null : String(description).trim() || null, due_date: dueDate, status: 'open',
+        completed_at: null, completed_by: null, completed_by_name: null,
+        created_by: me().id, created_by_name: me().display_name, created_at: now,
+        updated_at: now, updated_by: me().id, updated_by_name: me().display_name,
+      };
+      store.projects.push(row);
+      logProject('project_created', row, { project_id: row.id, due_date: row.due_date });
+      emitProject('projects', 'INSERT', row);
+      return ok(withAssignees(row));
+    },
+    async updateProject(id, patch) {
+      const project = store.projects.find((p) => p.id === id);
+      if (!project || !canSeeProject(project)) return fail('This project is no longer available to you.');
+      const r = applyProjectUpdate(project, patch, me());
+      return r.error ? fail(r.error) : ok(withAssignees(r.row));
+    },
+    async deleteProject(id) {
+      const project = store.projects.find((p) => p.id === id);
+      if (!project || !isAdmin()) return fail('Only Admin can do this.');
+      store.projects.splice(store.projects.indexOf(project), 1);
+      store.projectAssignees = store.projectAssignees.filter((a) => a.project_id !== id);
+      logProject('project_deleted', project, { deleted_row: clone(project) });
+      emitProject('projects', 'DELETE', { id });
+      return ok({ id });
+    },
+    async addProjectAssignees(projectId, profileIds) {
+      if (!profileIds.length) return ok([]);
+      if (!isAdmin()) return fail(RLS_ASSIGNEES);
+      for (const pid of profileIds) {
+        const person = store.people.find((p) => p.id === pid);
+        const role = store.roles.find((r) => r.id === person?.role_id);
+        if (!person?.is_active || !role || role.is_admin) return fail('Only active staff members can be assigned to a project.');
+      }
+      const added = [];
+      for (const pid of profileIds) {
+        if (store.projectAssignees.some((a) => a.project_id === projectId && a.profile_id === pid)) {
+          return fail({ code: '23505', message: 'duplicate key value violates unique constraint "project_assignees_pkey"' });
+        }
+        const row = { project_id: projectId, profile_id: pid, added_at: new Date().toISOString() };
+        store.projectAssignees.push(row);
+        added.push({ profile_id: pid });
+        emitProject('project_assignees', 'INSERT', row);
+      }
+      return ok(added);
+    },
+    async removeProjectAssignees(projectId, profileIds) {
+      if (!profileIds.length || !isAdmin()) return ok([]); // RLS: nothing deleted for staff
+      const removed = store.projectAssignees.filter((a) => a.project_id === projectId && profileIds.includes(a.profile_id));
+      store.projectAssignees = store.projectAssignees.filter((a) => !removed.includes(a));
+      removed.forEach((a) => emitProject('project_assignees', 'DELETE', { project_id: a.project_id, profile_id: a.profile_id }));
+      return ok(removed.map((a) => ({ profile_id: a.profile_id })));
+    },
+    listProjectHistory: (projectId) =>
+      ok(
+        isAdmin()
+          ? store.activity
+              .filter((a) => a.role_id === 'projects' && a.changes?.project_id === projectId)
+              .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : b.id - a.id))
+          : [],
+      ),
+    subscribeProjects(onChange) {
+      projectSubs.add(onChange);
+      return () => projectSubs.delete(onChange);
+    },
 
     // -------------------------------------------------------------- items
     listItems: (roleId) => ok(canAccess(roleId) ? store.items.filter((i) => i.role_id === roleId).map(withCount) : []),
@@ -282,6 +466,12 @@ export function createMockApi(store, personaRef) {
   api.remoteEdit = (itemId, patch, personId = 'u-ilyas') => {
     const actor = store.people.find((p) => p.id === personId);
     return applyUpdate(itemId, patch, actor);
+  };
+  /** Someone else changes a project (e.g. an assigned staff member marks it done). */
+  api.remoteProject = (projectId, patch, personId = 'u-dika') => {
+    const project = store.projects.find((p) => p.id === projectId);
+    const actor = store.people.find((p) => p.id === personId);
+    return project ? applyProjectUpdate(project, patch, actor) : null;
   };
   /** A teammate moves or removes their tracker's banner. */
   api.remoteBanner = (roleId, positionY, personId = 'u-ilyas') => {

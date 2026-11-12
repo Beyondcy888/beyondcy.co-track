@@ -6,6 +6,7 @@ import { useMonth } from '../data/MonthContext.jsx';
 import { PageHeader } from '../layout/PageHeader.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { sumTargets } from '../lib/progress.js';
+import { Person } from '../people/Avatar.jsx';
 import { isValidMonth, monthName, monthStart, shiftMonth } from '../lib/time.js';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { useToast } from '../ui/Toast.jsx';
@@ -187,7 +188,7 @@ function TargetRow({ row, monthIso, onSaved, onCleared }) {
     return (
       <tr className="trow is-readonly">
         <th scope="row">
-          <span className="truncate">{row.person.display_name}</span>
+          <Person id={row.person.id} name={row.person.display_name} size={28} />
           <span className="badge tbadge">No longer in this tracker</span>
         </th>
         <td>{row.brand?.name ?? row.brandId}</td>
@@ -209,7 +210,7 @@ function TargetRow({ row, monthIso, onSaved, onCleared }) {
     <>
       <tr className={`trow${empty ? ' is-empty' : ''}${dirty ? ' is-dirty' : ''}`} onBlur={onRowBlur} onKeyDown={onKeyDown}>
         <th scope="row">
-          <span className="truncate">{row.person.display_name}</span>
+          <Person id={row.person.id} name={row.person.display_name} size={28} />
         </th>
         <td>{row.brand.name}</td>
         <td>

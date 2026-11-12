@@ -205,6 +205,37 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
     [api, upsert],
   );
 
+  /**
+   * Calendar drag (update v3, 05 §3): the chip moves at once, then the date is saved.
+   * If the database refuses, the item goes back to where it was and the error is returned.
+   * Removing the date from a Planned item makes it Not started (a date is required for Planned).
+   */
+  const moveItem = useCallback(
+    async (id, publishDate) => {
+      let before = null;
+      setItems((prev) =>
+        prev.map((x) => {
+          if (x.id !== id) return x;
+          before = x;
+          const next = { ...x, publish_date: publishDate };
+          if (!publishDate && x.status === 'planned') {
+            next.status = 'not_started';
+            next.missing_fields = [...new Set([...(x.missing_fields ?? []), 'publish_date'])];
+          }
+          return next;
+        }),
+      );
+      const r = await api.updateItem(id, { publish_date: publishDate });
+      if (r.error) {
+        if (before) setItems((prev) => prev.map((x) => (x.id === id && x.updated_at === before.updated_at ? before : x)));
+        return r;
+      }
+      if (r.data) upsert(r.data);
+      return r;
+    },
+    [api, upsert],
+  );
+
   const deleteItem = useCallback(
     async (id) => {
       const r = await api.deleteItem(id);
@@ -291,6 +322,7 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
       reload: load,
       createItem,
       updateItem,
+      moveItem,
       deleteItem,
       updateTargetNote,
       addComment,
@@ -301,7 +333,7 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
     [
       roleId, all, role, brands, team, membersOf, app.brandsForRole, app.rolesById, app.pillarsByBrand, app.brandsById,
       app.peopleById, profile, items, itemsById, targets, banner, status, error, live, loadedMonth, load,
-      createItem, updateItem, deleteItem, updateTargetNote, addComment, deleteComment, onCommentEvent, api,
+      createItem, updateItem, moveItem, deleteItem, updateTargetNote, addComment, deleteComment, onCommentEvent, api,
     ],
   );
 

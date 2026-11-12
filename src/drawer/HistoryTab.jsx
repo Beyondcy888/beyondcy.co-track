@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTracker } from '../data/TrackerProvider.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { describeActivity } from '../lib/history.js';
+import { Avatar } from '../people/Avatar.jsx';
 import { RelativeTime, Spinner } from '../ui/bits.jsx';
 
 /** activity_log for this item, newest first, with expandable old → new values. */
@@ -54,7 +55,9 @@ export function HistoryTab({ item }) {
         const d = describeActivity(entry, ctx);
         return (
           <li key={entry.id} className={`h-entry h-${entry.action}`}>
-            <span className="h-dot" aria-hidden="true" />
+            <span className="h-who" aria-hidden="true">
+              <Avatar id={entry.actor_id} name={entry.actor_name} size={20} />
+            </span>
             <div className="h-content">
               <p className="h-line">
                 <strong>{d.actor}</strong> {d.text}

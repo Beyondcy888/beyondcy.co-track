@@ -1,5 +1,7 @@
 // Pieces shared by the Admin dashboard's tables and tracker list.
 import { Link } from 'react-router-dom';
+import { useAppData } from '../data/AppDataProvider.jsx';
+import { AvatarStack, namesOf } from '../people/Avatar.jsx';
 import { formatAchievement, trackAriaLabel } from '../lib/progress.js';
 import { TypeIcon } from '../ui/bits.jsx';
 import { IconChevronRight, IconInfo } from '../ui/icons.jsx';
@@ -71,6 +73,7 @@ function MiniTrack({ stats }) {
 
 /** §9.5: one row per tracker (name, people, mini progress line) linking to the tracker. */
 export function TrackerList({ rows, loading }) {
+  const app = useAppData();
   return (
     <ul className="choose-list">
       {rows.map(({ role, stats, people, brands }) => (
@@ -78,7 +81,16 @@ export function TrackerList({ rows, loading }) {
           <Link to={`/t/${role.id}`} className="choose-row">
             <span className="choose-name">
               <span className="choose-title">{role.name}</span>
-              <span className="choose-people">{people.length ? people.join(', ') : 'No one assigned yet'}</span>
+              <span className="choose-people">
+                {people.length ? (
+                  <>
+                    <AvatarStack ids={people} size={20} max={5} />
+                    <span className="truncate">{namesOf(app, people)}</span>
+                  </>
+                ) : (
+                  'No one assigned yet'
+                )}
+              </span>
             </span>
             <span className="choose-brands">{brands.length > 1 ? brands.join(' · ') : ''}</span>
             <span className="choose-progress">

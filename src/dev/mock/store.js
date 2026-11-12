@@ -1,7 +1,9 @@
 // DEV ONLY: fake data for `npm run mock`. Mirrors the seed (02_seed.sql), the status
-// trigger (01_schema.sql §5) and the v2 rules (04_update_v2.sql: PIC, content_targets,
-// banners) closely enough for visual and interaction QA.
+// trigger (01_schema.sql §5), the v2 rules (04_update_v2.sql: PIC, content_targets,
+// banners) and v3 (06_update_v3.sql: photos, the people view, projects) closely enough
+// for visual and interaction QA.
 import { addDays, currentMonthWIB, daysInMonth, monthStart, shiftMonth, todayWIB } from '../../lib/time.js';
+import { weekRange } from '../../lib/week.js';
 
 export const ROLES = [
   { id: 'admin', name: 'Admin', is_admin: true, layout: null, sort_order: 0 },
@@ -51,7 +53,7 @@ export const PEOPLE = [
   { id: 'u-anne', email: 'anne@beyondcy.co', display_name: 'Anne', role_id: 'behomy', is_active: true },
   { id: 'u-rina', email: 'rina.new@beyondcy.co', display_name: 'rina.new', role_id: null, is_active: true },
   { id: 'u-bagas', email: 'bagas@beyondcy.co', display_name: 'Bagas', role_id: 'beefix', is_active: false },
-].map((p) => ({ ...p, created_at: '2026-10-01T02:00:00Z' }));
+].map((p) => ({ ...p, avatar_path: null, avatar_updated_at: null, created_at: '2026-10-01T02:00:00Z' }));
 
 const TITLES = [
   'Promo bundling akhir bulan',
@@ -273,6 +275,29 @@ function target(store, { profile, brand, month, reels, feed, note = null }) {
   });
 }
 
+/** A 512×512 illustrated portrait as a data URL, so a few people have a "photo" in the mock. */
+function demoPortrait({ from, to, skin, hair, shirt, long = false }) {
+  const hairShape = long
+    ? '<path d="M148 250c-10-96 34-166 108-166s118 70 108 166c-6 52-10 86-4 120h-54c14-60 12-128-50-170-62 42-64 110-50 170h-54c6-34 2-68-4-120z" fill="' + hair + '"/>'
+    : '<path d="M156 214c-8-78 36-128 100-128s108 50 100 128c-16-40-48-66-100-70-52 4-84 30-100 70z" fill="' + hair + '"/>';
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' +
+    from +
+    '"/><stop offset="1" stop-color="' +
+    to +
+    '"/></linearGradient></defs><rect width="512" height="512" fill="url(#g)"/><circle cx="400" cy="96" r="150" fill="#fff" opacity=".07"/>' +
+    '<path d="M84 512c10-116 82-172 172-172s162 56 172 172z" fill="' +
+    shirt +
+    '"/><rect x="226" y="286" width="60" height="76" rx="26" fill="' +
+    skin +
+    '"/><circle cx="256" cy="222" r="92" fill="' +
+    skin +
+    '"/>' +
+    hairShape +
+    '</svg>';
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 /** A 1500×600 abstract banner (the dot motif), as a data URL: no network, no files. */
 function demoBanner() {
   const dots = [];
@@ -301,7 +326,10 @@ export function createStore() {
     comments: [],
     activity: [],
     banners: [],
-    files: new Map(), // storage path → URL
+    files: new Map(), // storage path → URL (banners and profile photos)
+    blobs: new Map(), // storage path → Blob (photos uploaded in this session, for "Adjust")
+    projects: [],
+    projectAssignees: [], // { project_id, profile_id, added_at }
   };
   const today = todayWIB();
   const m = currentMonthWIB();
@@ -381,6 +409,80 @@ export function createStore() {
   const bannerPath = 'behomy/demo-banner.svg';
   store.files.set(bannerPath, demoBanner());
   store.banners.push({ role_id: 'behomy', image_path: bannerPath, position_y: 50, updated_by: 'u-arum', updated_by_name: 'Arum', updated_at: nowIso() });
+
+  // ---------------------------------------------------------------- v3: profile photos
+  // Some people have a photo, the rest show their initial (both states are worth seeing).
+  const portraits = {
+    'u-arum': { from: '#7a4b63', to: '#2b2030', skin: '#e8b99a', hair: '#2a1c1a', shirt: '#f1e6d8', long: true },
+    'u-dika': { from: '#2f5d62', to: '#182a2e', skin: '#c9966f', hair: '#17110f', shirt: '#e9c46a' },
+    'u-excel': { from: '#6b5a2e', to: '#26211a', skin: '#d9a67f', hair: '#231815', shirt: '#2f3a55' },
+    'u-anne': { from: '#5b3f7a', to: '#1f1a2b', skin: '#f0c6a8', hair: '#4a2c1c', shirt: '#d98f8f', long: true },
+  };
+  for (const [id, look] of Object.entries(portraits)) {
+    const path = `${id}/demo-photo.svg`;
+    store.files.set(path, demoPortrait(look));
+    const person = store.people.find((x) => x.id === id);
+    person.avatar_path = path;
+    person.avatar_updated_at = nowIso();
+  }
+
+  // ---------------------------------------------------------------- v3: this week
+  // The seeded batches plan ahead only, so add work for today and for earlier this week
+  // (still open): the reminder then shows "today", "late" and the list at once.
+  const week = weekRange(today);
+  const thisWeek = [
+    { role: 'beefix', brand: 'beefix', pic: 'u-dika' },
+    { role: 'lahap_makmoer', brand: 'lahap', pic: 'u-excel' },
+    { role: 'behomy', brand: 'behomy', pic: 'u-arum' },
+    { role: 'behomy', brand: 'hoteru', pic: 'u-ilyas' },
+    { role: 'homy8', brand: 'homy8', pic: 'u-zaki', pillars: [homyPillars[0]] },
+  ];
+  thisWeek.forEach((x, i) => {
+    makeItem(store, { ...x, owner: x.pic, status: 'planned', type: i % 2 ? 'feed' : 'reels', date: today, title: TITLES[(i * 3 + 1) % TITLES.length] });
+    if (week.start < today) {
+      makeItem(store, { ...x, owner: x.pic, status: 'not_started', date: week.start, title: TITLES[(i * 3 + 2) % TITLES.length], pillars: undefined });
+    }
+  });
+
+  // ---------------------------------------------------------------- v3: projects
+  const proj = ({ name, description = null, due, assignees, done = null, createdDaysAgo = 4 }) => {
+    const created = new Date(Date.now() - createdDaysAgo * 86400000).toISOString();
+    const row = {
+      id: uid(),
+      name,
+      description,
+      due_date: due,
+      status: done ? 'done' : 'open',
+      completed_at: done ? new Date(Date.now() - done.daysAgo * 86400000).toISOString() : null,
+      completed_by: done?.by ?? null,
+      completed_by_name: done ? store.people.find((x) => x.id === done.by).display_name : null,
+      created_by: 'u-admin',
+      created_by_name: 'Admin Beyondcy',
+      created_at: created,
+      updated_at: created,
+      updated_by: 'u-admin',
+      updated_by_name: 'Admin Beyondcy',
+    };
+    store.projects.push(row);
+    assignees.forEach((profile_id) => store.projectAssignees.push({ project_id: row.id, profile_id, added_at: created }));
+    store.activity.push({ id: store.activity.length + 1, role_id: 'projects', item_id: null, actor_id: 'u-admin', actor_name: 'Admin Beyondcy', action: 'project_created', summary: name, changes: { project_id: row.id, due_date: due }, created_at: created });
+    if (done) {
+      store.activity.push({ id: store.activity.length + 1, role_id: 'projects', item_id: null, actor_id: done.by, actor_name: row.completed_by_name, action: 'project_completed', summary: name, changes: { project_id: row.id, status: { old: 'open', new: 'done' } }, created_at: row.completed_at });
+    }
+    return row;
+  };
+  proj({
+    name: 'Company profile video shoot',
+    description:
+      'One-day shoot for the new company profile.\n\nCall time 08.00 at the Bintaro showroom. Dika handles the Beefix product scenes, Arum the Behomy interviews.\n\nShot list: https://docs.google.com/document/d/contoh-shotlist\nMoodboard: https://pin.it/3xAmPle\n\nBring both gimbals and the wireless mics.',
+    due: addDays(today, 2),
+    assignees: ['u-dika', 'u-arum'],
+  });
+  proj({ name: 'Booth design for the weekend expo', description: 'Final artwork for the 3×3 m booth: backdrop, standing banner and price cards.\nPrint deadline is the same afternoon.', due: today, assignees: ['u-zaki', 'u-excel'], createdDaysAgo: 6 });
+  proj({ name: 'Photo session: new showroom', description: 'Wide shots of every corner plus 10 detail shots for the feed.\nReference: https://www.instagram.com/behomyid/', due: addDays(today, -2), assignees: ['u-arum', 'u-anne'], createdDaysAgo: 9 });
+  proj({ name: 'Year-end campaign moodboard', description: 'Collect references for the December campaign. One board per brand, then we pick together on Monday.', due: addDays(today, 9), assignees: ['u-excel', 'u-zaki', 'u-ilyas'] });
+  proj({ name: 'Content calendar workshop', description: 'Half-day workshop to plan next quarter. Everyone brings last quarter\'s top 3 posts.', due: addDays(today, 23), assignees: ['u-arum', 'u-ilyas', 'u-anne', 'u-dika', 'u-excel'], createdDaysAgo: 2 });
+  proj({ name: 'Brand guideline refresh', description: 'Update the logo usage page and the colour codes.', due: addDays(today, -6), assignees: ['u-dika'], done: { by: 'u-dika', daysAgo: 7 }, createdDaysAgo: 15 });
 
   return store;
 }

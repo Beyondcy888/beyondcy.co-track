@@ -289,3 +289,42 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ============================================================ update v3 */
+/* a toast with an action (Undo after a calendar drag) can be clicked */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-msg {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast.has-action {
+  padding-right: 6px;
+  pointer-events: auto;
+}
+
+.toast-action {
+  flex: none;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.toast-action:hover {
+  background: var(--accent-hi);
+}
+
+.toolbar-clear {
+  font-size: var(--fs-sm);
+}

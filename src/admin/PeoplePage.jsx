@@ -4,6 +4,7 @@ import { useApi } from '../data/ApiContext.js';
 import { useAppData } from '../data/AppDataProvider.jsx';
 import { PageHeader } from '../layout/PageHeader.jsx';
 import { friendlyError } from '../lib/errors.js';
+import { AvatarEditor } from '../people/AvatarEditor.jsx';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { Spinner } from '../ui/bits.jsx';
@@ -40,7 +41,8 @@ function NameInput({ person, onSave }) {
 }
 
 /**
- * /admin/people: display name, email (read-only), role, active.
+ * /admin/people: photo, display name, email (read-only), role, active.
+ * Admin can change or remove anyone's photo here (update v3, file 03).
  * Changing someone's role is how brands "roll" between people.
  */
 export function PeoplePage() {
@@ -136,7 +138,7 @@ export function PeoplePage() {
           <div className="table-wrap people-wrap">
             <table className="table people-table">
               <colgroup>
-                <col style={{ width: 220 }} />
+                <col style={{ width: 270 }} />
                 <col style={{ width: 260 }} />
                 <col style={{ width: 240 }} />
                 <col style={{ width: 120 }} />
@@ -153,7 +155,10 @@ export function PeoplePage() {
                 {people.map((person) => (
                   <tr key={person.id} className={person.is_active ? '' : 'is-inactive'}>
                     <td>
-                      <NameInput person={person} onSave={(patch) => save(person, patch)} />
+                      <div className="people-who">
+                        <AvatarEditor personId={person.id} size={36} />
+                        <NameInput person={person} onSave={(patch) => save(person, patch)} />
+                      </div>
                     </td>
                     <td>
                       <span className="cell-text dim" title={person.email}>

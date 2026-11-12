@@ -29,6 +29,7 @@ You are building the first release of three websites for **Beyondcy** (Beyondcy 
 9. `09_UPDATE_V2.md`: **update v2** (brand green + logo, full-width layout, Notion-like sidebar, banners, targets per person × brand split into Reels + Feed, PIC, ring chart, Admin Dashboard and Targets page). **Where it disagrees with 01–08, 09 wins.**
 10. `10_SPLIT_INTO_3_REPOS.md`: the split into three repos on github.io links (done 9 Nov 2026). **Where it disagrees with 01–09 about repos, hosting or links, 10 wins.**
 11. `11_CONNECT_DOMAIN.md`: **later**: connecting `beyondcy.co`, `dash.` and `track.` (DNS at Hostinger, `CNAME` files, base path back to `/`).
+12. `UPDATE-V3/` (files 00–07 + `references/`): **update v3** (12 Nov 2026): profile photos, projects, the four boxes on every page, the this-week reminder, dragging in the calendar, the status board, brand cards, and the team's portfolio moving into the `beyondcy.co` repo. **Where it disagrees with 00–11, v3 wins.** Its SQL is `supabase/06_update_v3.sql` (the owner ran it).
 
 Also in `docs/`: `TASKS.md` (the build's task list, newest work first), `deploy.ps1` (a copy of the push script that lives in the parent `Beyondcy-Web` folder), `DEPLOY-PLAN.md` (an earlier deploy plan, superseded by 10), and the owner's original spec folders `START-DEV-01/`, `START-DEV-02/`, `START-SUPABASE-01/` (archive; the numbered files above are the working copies).
 

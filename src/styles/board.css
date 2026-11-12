@@ -1,0 +1,343 @@
+/* The status board (update v3, 05 §4): three columns, display only. */
+
+.board-section {
+  margin: 48px 0 24px;
+}
+
+.board-head {
+  align-items: center;
+}
+
+.board-mine {
+  margin-left: auto;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.bcol {
+  --hue: var(--status-not-started);
+  --hue-light: var(--status-not-started-light);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+  background: var(--panel);
+}
+
+.bcol--planned {
+  --hue: var(--status-planned);
+  --hue-light: var(--status-planned-light);
+}
+
+.bcol--uploaded {
+  --hue: var(--status-uploaded);
+  --hue-light: var(--status-uploaded-light);
+}
+
+/* header: marker + name, the big total, the Reels / Feed split below it */
+.bcol-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-bottom: 14px;
+  padding: 0 4px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bcol-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--hue-light);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.bcol-mark {
+  flex: none;
+  width: 4px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--hue);
+}
+
+/* Planned keeps its ring shape here too, so colour is never the only signal */
+.bcol--planned .bcol-mark {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--hue);
+}
+
+.bcol-count {
+  margin-top: 10px;
+  font-size: clamp(2.75rem, 3.6vw, 3.75rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.bcol-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+}
+
+.bcol-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.bcol-type .mono {
+  color: var(--text);
+}
+
+.bcol-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.bcol-hint .mono {
+  color: var(--text);
+}
+
+.bcol-bar {
+  flex: 1 1 auto;
+  max-width: 132px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--dot-empty);
+}
+
+.bcol-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--status-uploaded);
+}
+
+.bcol-cards {
+  display: grid;
+  gap: 8px;
+}
+
+/* ------------------------------------------------------------ cards */
+.bcard {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-control);
+  background: color-mix(in srgb, var(--raised) 46%, var(--panel));
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.bcard:hover,
+.bcard:focus-within {
+  border-color: color-mix(in srgb, var(--text-dim) 42%, var(--line));
+  background: var(--raised);
+}
+
+.bcard-brand {
+  margin: -12px -12px 0;
+  padding: 7px 12px 6px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+/* the title opens the item; its hit area covers the whole card */
+.bcard-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+
+.bcard-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.bcard-open:focus-visible {
+  outline: none;
+}
+
+.bcard-open:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bcard-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 500;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* type (and Overdue) on the left, the PIC's photo and name on the right */
+.bcard-mid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.bcard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.bcard-notype {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.bcard-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.bcard-tag--late {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger-light);
+}
+
+.bcard-who {
+  display: flex;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+
+.bcard-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 22px;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.bcard-date,
+.bcard-comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.bcard-date .mono {
+  color: var(--text);
+}
+
+.bcard.is-overdue .bcard-date,
+.bcard.is-overdue .bcard-date .mono {
+  color: var(--danger-light);
+}
+
+.bcard-left {
+  white-space: nowrap;
+}
+
+.bcard-ig {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -3px -4px -3px auto;
+  border-radius: 8px;
+  color: var(--text-dim);
+}
+
+.bcard-ig:hover {
+  background: var(--raised-hi);
+  color: var(--text);
+}
+
+.bcol-empty {
+  padding: 22px 12px;
+  border: 1px dashed color-mix(in srgb, var(--text-dim) 35%, transparent);
+  border-radius: var(--r-control);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
+.bcol-more {
+  margin-top: 10px;
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.bcol-more:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ narrower screens: the columns scroll sideways */
+@media (max-width: 980px) {
+  .board {
+    grid-template-columns: repeat(3, minmax(268px, 1fr));
+    margin: 0 calc(var(--pad-x) * -1);
+    padding: 0 var(--pad-x) 10px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: var(--pad-x);
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+
+  .bcol {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .board-mine {
+    margin-left: 0;
+  }
+}

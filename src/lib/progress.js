@@ -334,6 +334,25 @@ export function brandSplit({ items, brands, targets, month }) {
 }
 
 /**
+ * The headline numbers of a tracker page, in the page's scope (update v3, 05 §1): the four
+ * summary boxes and the big progress module both use this, so they always agree.
+ *   lanes 'brands': the page's brands (Dika / Zaki, Excel Master, an Excel brand page)
+ *   lanes 'me':     my work (items where I'm the PIC, my targets)
+ *   lanes 'people': the whole tracker (Behomy Master)
+ * `items` are the page's items (already filtered by the view); `allItems` the tracker's.
+ */
+export function pageStats({ view, items, allItems, targets, me, month, today }) {
+  if (view.lanes === 'brands') {
+    const brandIds = new Set(view.laneBrands.map((b) => b.id));
+    return groupStats({ items, targetRows: targets.filter((r) => brandIds.has(r.brand_id)), month, today });
+  }
+  if (view.lanes === 'me') {
+    return groupStats({ items, targetRows: targets.filter((r) => r.profile_id === me), month, today });
+  }
+  return groupStats({ items: allItems, targetRows: targets, month, today });
+}
+
+/**
  * The Admin dashboard's tables (§9.3, §9.4) for one month.
  *   cells: one per PIC × brand with a target or uploads (rows with uploads but no target included)
  *   pics:  one per PIC × tracker with a target or uploads

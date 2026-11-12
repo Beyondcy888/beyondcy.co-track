@@ -4,6 +4,72 @@ This file records everything the owner has decided so far (including the dashboa
 
 Update v2 (`09_UPDATE_V2.md`, 4 Nov 2026) replaced the target, ownership and accent decisions below. Where an older doc (01–08) disagrees with 09, 09 wins. The split into three repos (`10_SPLIT_INTO_3_REPOS.md`, 9 Nov 2026) decides repos, hosting and links; connecting the domain comes later with `11_CONNECT_DOMAIN.md`.
 
+## Update v3 (12 Nov 2026): photos, projects, this week, drag, status board, brand cards, portfolio
+
+Spec: `docs/UPDATE-V3/` (files 00–07, the owner's reference images, and the SQL the owner ran: `supabase/06_update_v3.sql`). **Where v3 disagrees with 00–11, v3 wins.** The database was not changed by the build; the app was adapted to it.
+
+**Decided by the owner**
+- **This-week reminder:** Monday–Sunday of the current week (WIB). Only Not started and Planned content (never Uploaded), plus open projects due this week. A warm "all done" state when the week's content is all uploaded.
+- **Calendar drag:** staff in their own tracker, Admin everywhere including the Dashboard. Uploaded content is locked. Drag into and out of "No date". A toast with **Undo**. Only Admin drags projects.
+- **Status board:** display only (no dragging between columns). A big total per column with the Reels / Feed split below it. Clicking a card opens the item.
+- **Boxes on tracker pages:** the same scope as the page's progress module; both the boxes and the big module stay.
+- **Projects:** visible to the assigned staff and Admin only; shown on the deadline in their calendars; Admin and assigned staff can mark one done; any active staff member can be assigned; the description is plain text with clickable links.
+- **Profile photos:** people change their own, Admin anyone's. Round crop with zoom. Everyone signed in sees everyone's name and photo, never emails.
+- **Brand cards:** count for the month selected on the Dashboard; a card opens that brand's tracker page; nine equal cards in one row that scrolls sideways on narrow screens.
+- **Portfolio:** the team's website replaces the "Stay tuned" page. The login page stays in the code but is not linked or published.
+- **Publishing (12 Nov):** nothing is pushed until the owner has looked at localhost and says "push".
+
+**Defaults chosen by Claude in v3 (change them any time)**
+- The reminder also shows **overdue** work (dated before this week, still Not started or Planned, and open projects past their deadline) in a small group on top. To remove it: drop the `overdue` group in `src/track/WeekReminder.jsx`.
+- The reminder's counter ("4 to go") counts this week only; overdue has its own count in its group.
+- In the calendar, **projects sit above content** in a day, so a deadline is never hidden behind "+N more".
+- A Planned item dropped on "No date" becomes Not started (the database does this: a date is required for Planned). The toast says so, and Undo brings both back.
+- Status board extras: "x of y target" under Uploaded (the page's month target), and a "Mine only" switch on a team Master page for staff.
+- Letter avatars use six muted tones (rose, teal, ochre, magenta, brick, sand): none of the status colours and neither type colour. The tone is picked from the person's id, so it never changes.
+- The big achievement number shows the decimals and the % sign smaller ("41" + ".8%"): the digits that matter stay big and the gauge keeps its room.
+- On the Dashboard calendar, projects follow the Tracker and PIC filters through the people they're assigned to; they hide when a Brand or Status filter is set (projects have neither), and the Type filter has "Projects".
+- While dragging, holding the chip over the previous / next month name (they appear in the calendar's header) turns the page.
+- The project popup has a History section for Admin (from `activity_log`).
+
+**Brand logos and colours (owner: swap any you don't like)**
+One place to change them: `src/config/brandStyle.js`. Files are in `public/brand-logos/` (trimmed, max 512px, WebP). Sources, including the ones not chosen: `design-assets/tracker-brand-logo/` (in the repo, not published). No SVGs were supplied, so each is the highest-resolution transparent PNG that reads on a dark background.
+
+| Brand | Chosen file (folder / file) | Colour | Where the colour comes from |
+|---|---|---|---|
+| Behomy | `behomy&behomyGroup/Behomy Teks Putih.png` | `#F47F1F` | the logo (orange) |
+| Behomy Group | `behomy&behomyGroup/Logo Behomy 1.png` (white) | `#3C507E` | `Logo Behomy 2.png` (navy), same folder |
+| Homy8 | `H8/1. Logo Utama H8.png` | `#F28106` | the logo (orange). "Logo Utama" is also the mark the team's portfolio uses |
+| Beefix | `beefix/Logo Beefix Putih.png` | `#F2E70E` | the logo (yellow) |
+| Purnava | `purnava/logo purnava-22.png` (white emblem) | `#4D674A` | `logo purnava-14.png` (green), same folder |
+| Hoteru | `hoteru/Frame 48.png` (white) | `#4A4233` | `Frame 49.png` (brown), same folder |
+| Corvel | `corvel/Lettermark Logo Corvel_Cream.png` | `#792C02` | `Lettermark Logo Corvel_Maroon.png`, same folder |
+| Kedai Makmoer 88 | `makmoer/LOGO---KEDAI-MAKMOER-88--PUTIH.png` (white) | `#2D4F2B` | `LOGO---KEDAI-MAKMOER-88.png` (green; its accent is red `#BC0016`) |
+| Lahap | `lahap/Frame 38.png` | `#FFEC3D` | the logo (yellow) |
+
+- Five of these colours are too dark to glow on a dark card, so `brandStyle.js` also holds a `glow` for them: the same hue, lifted (Behomy Group, Purnava, Hoteru, Corvel, Kedai Makmoer 88).
+- Things the owner may want to change: **Lahap and Beefix are both yellow**, and **Behomy and Homy8 are both orange** (their real colours). Lahap also has a red wordmark (`lahap/Frame 16.png`, `#DA2017`); Kedai Makmoer 88 could take its red accent instead of green (Purnava is green too).
+
+**Build decisions (v3)**
+- **People directory:** `AppDataProvider` now reads the `people` view (everyone, no emails) instead of `profiles`. Photo URLs are signed in one batch, cached by path + "updated at", renewed five minutes before they expire, and refreshed with the directory when the tab regains focus or a photo changes. `profiles` is still used for your own profile and the Admin People page.
+- **One `<Avatar>`** (`src/people/Avatar.jsx`) everywhere a person is shown. The letter stays under the photo until it has loaded, so there is never a broken image.
+- **PIC filters and the PIC field** are a custom dropdown (`PersonSelect`), because a native `<select>` can't show photos. New content in a team tracker picks the PIC from a short list with photos.
+- **Projects are loaded once for the whole app** (`ProjectsProvider`): the database returns what this person may see. Any realtime event on `projects` or `project_assignees` re-reads the (small) list. The popup is `?project=<id>` in the address, like `?item=<id>` for content.
+- **Drag and drop:** `@dnd-kit/core` with a mouse sensor (6px) and a touch sensor (press and hold 250ms). No keyboard dragging: Enter and Space open the item, and the date can be changed in the drawer. The chip moves at once and is put back if saving fails, with the database's message.
+- **The table's filters live on the page** (`useContentFilters`), so the status board shows exactly what the table shows. The Brand filter is `?brand=<id>` in the address: that is how a brand card opens Behomy Master with the brand already chosen.
+- **The four boxes are one component** (`src/track/SummaryBoxes.jsx`) fed by `pageStats()` in `lib/progress.js`, the same function the progress module uses.
+- **Boxes keep their size** (172px). The number is as big as fits; the illustration takes the room the number leaves (measured), so it never sits on the number or the line below.
+- **Errors:** `friendlyError(err, { refused })` lets projects and photos show "Only Admin can do this." where the tracker shows "You don't have access to this tracker.". The database's own messages pass through unchanged.
+- **Mock mode** (`npm run mock`) mirrors the v3 rules: the people view, the avatars bucket and `set_profile_avatar`, projects with their row-level rules, and demo projects and photos.
+- **`/dev-check`** has v3 checks (people view without emails, projects, avatars bucket, `set_profile_avatar` refusal). Nothing is written, except one project insert as staff that must be refused.
+- **Portfolio (`beyondcy.co` repo):** Next.js 15 static export. The base path comes from one variable (`BASE_PATH`, set only in its workflow). The login page is kept in `app/_login/`, which Next.js does not publish. Because the repo name contains a dot, Next.js would treat `.co` as a file extension and break the Home link; `skipTrailingSlashRedirect` plus `pageHref()` fix that. Its Pages source must be **GitHub Actions**.
+- **Tests:** run npm from an upper-case drive path (`D:\…`). From `d:\` vitest fails before the first test.
+
+**Still open after v3 (owner)**
+- Look at localhost, then say "push" (`.\deploy.ps1`).
+- After the push: `beyondcy.co` → Settings → Pages → Source = **GitHub Actions**, then check https://beyondcy888.github.io/beyondcy.co/.
+- With real logins: run `/dev-check` as Admin and as a staff member; upload a photo; create a project for two people in different trackers.
+- Delete `beyondcy.co\.original-from-team\` (the team's folder as delivered, kept locally and git-ignored) once the live portfolio has been checked.
+
 ## Repos and hosting: the split into three repos (10, 9 Nov 2026)
 
 **Decided by the owner**

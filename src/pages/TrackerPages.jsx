@@ -5,18 +5,28 @@ import { NoTrackerAccess } from '../auth/guards.jsx';
 import { useAppData } from '../data/AppDataProvider.jsx';
 import { useMonth } from '../data/MonthContext.jsx';
 import { TrackerProvider, useTracker } from '../data/TrackerProvider.jsx';
+import { useCurrentMonth, useToday } from '../data/useNow.js';
 import { PageHeader } from '../layout/PageHeader.jsx';
 import { TrackModule } from '../track/TrackModule.jsx';
+import { SummaryBoxes } from '../track/SummaryBoxes.jsx';
+import { WeekReminder } from '../track/WeekReminder.jsx';
 import { ContentTable } from '../table/ContentTable.jsx';
+import { useContentFilters } from '../table/useContentFilters.js';
 import { MonthCalendar } from '../calendar/MonthCalendar.jsx';
+import { useCalendarMoves } from '../calendar/useCalendarMoves.js';
+import { StatusBoard } from '../board/StatusBoard.jsx';
 import { ItemDrawer } from '../drawer/ItemDrawer.jsx';
 import { PageMenu, TrackerBanner } from '../banner/TrackerBanner.jsx';
 import { useBanner } from '../banner/useBanner.js';
+import { Avatar } from '../people/Avatar.jsx';
+import { useProjects } from '../projects/ProjectsProvider.jsx';
 import { Popover } from '../ui/Popover.jsx';
 import { Spinner } from '../ui/bits.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { friendlyError } from '../lib/errors.js';
-import { targetsForMonth } from '../lib/progress.js';
+import { pageStats, targetsForMonth } from '../lib/progress.js';
+import { monthName } from '../lib/time.js';
+import { weekRange } from '../lib/week.js';
 import { buildView } from './view.js';
 
 /**
@@ -56,6 +66,7 @@ function BrandPicker({ anchor, brands, onPick, onClose }) {
 /**
  * Admin creating content in Behomy (several people): Brand and PIC (09 §6).
  * When exactly one person has a target for the brand that month, they're pre-selected.
+ * The PIC is chosen from the members' photos and names (update v3, file 03).
  */
 function BrandPicPicker({ anchor, brands, members, targets, month, onPick, onClose }) {
   const id = useId();
@@ -98,17 +109,18 @@ function BrandPicPicker({ anchor, brands, members, targets, month, onPick, onClo
             ))}
           </select>
         </label>
-        <label className="new-field" htmlFor={`${id}-pic`}>
-          <span>PIC</span>
-          <select id={`${id}-pic`} className="select" value={pic} onChange={(e) => setPic(e.target.value)} aria-describedby={`${id}-hint`}>
-            <option value="">Choose a PIC</option>
+        <fieldset className="new-field new-pics" aria-describedby={`${id}-hint`}>
+          <legend>PIC</legend>
+          <div className="new-pic-list">
             {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.display_name}
-              </option>
+              <label key={m.id} className={`new-pic${pic === m.id ? ' is-on' : ''}`}>
+                <input type="radio" name={`${id}-pic`} value={m.id} checked={pic === m.id} onChange={() => setPic(m.id)} />
+                <Avatar id={m.id} size={28} />
+                <span className="truncate">{m.display_name}</span>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
         <p className="new-hint" id={`${id}-hint`}>
           {suggested ? 'Pre-selected: the only person with a target for this brand this month.' : 'The PIC is whose target this content counts toward.'}
         </p>
@@ -125,17 +137,28 @@ function BrandPicPicker({ anchor, brands, members, targets, month, onPick, onClo
   );
 }
 
-/** One tracker page: banner, the track, the table, the calendar, and the drawer. */
+/**
+ * One tracker page, top to bottom (update v3, file 05):
+ * banner · greeting · four summary boxes · progress module with the this-week reminder ·
+ * lanes · content table · calendar (drag to change a date) · status board; and the drawer.
+ * Every section uses the same items as the page (My work = mine, Master = the tracker,
+ * a brand page = that brand).
+ */
 export function TrackerView({ kind }) {
   const { brandId } = useParams();
   const t = useTracker();
+  const ps = useProjects();
   const toast = useToast();
-  const { month } = useMonth();
+  const { month, setMonth } = useMonth();
+  const today = useToday();
+  const currentMonth = useCurrentMonth();
   const banner = useBanner();
+  const moves = useCalendarMoves();
   const [searchParams, setSearchParams] = useSearchParams();
   const [picker, setPicker] = useState(null); // { anchor, publishDate }
   const [focusNew, setFocusNew] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [flashWeek, setFlashWeek] = useState(null);
 
   const view = useMemo(
     () => buildView({ role: t.role, brands: t.brands, kind, brandId, isAdmin: t.isAdmin, me: t.me }),
@@ -143,11 +166,21 @@ export function TrackerView({ kind }) {
   );
 
   const items = useMemo(() => (view.filter ? t.items.filter(view.filter) : []), [t.items, view]);
+  const filters = useContentFilters({ items, month, view: view.filter ? view : EMPTY_VIEW });
   const openId = searchParams.get('item');
   const { membersOf, roleId } = t;
   const members = useMemo(() => membersOf(roleId), [membersOf, roleId]);
   // Admin must choose a PIC where the tracker has several people (Behomy); elsewhere the database decides
   const adminPicksPic = t.isAdmin && members.length > 1;
+
+  // the boxes and the progress module read the same numbers (05 §1)
+  const stats = useMemo(
+    () => (view.filter ? pageStats({ view, items, allItems: t.items, targets: t.targets, me: t.me, month, today }) : null),
+    [view, items, t.items, t.targets, t.me, month, today],
+  );
+
+  // projects: staff see their own on every page of their tracker; Admin sees this tracker's people's
+  const projects = useMemo(() => ps.forTracker(roleId), [ps, roleId]);
 
   const openItem = useCallback(
     (id) => {
@@ -172,6 +205,12 @@ export function TrackerView({ kind }) {
     );
   }, [setSearchParams]);
 
+  /** From the reminder: show the current month, scroll to the calendar, flash this week. */
+  const showWeek = useCallback(() => {
+    if (month !== currentMonth) setMonth(currentMonth);
+    setFlashWeek({ start: weekRange(today).start, key: Date.now() });
+  }, [month, currentMonth, setMonth, today]);
+
   const create = async (brand, publishDate, picId = null) => {
     setPicker(null);
     if (creating) return;
@@ -193,6 +232,8 @@ export function TrackerView({ kind }) {
   };
 
   if (view.redirect) return <Navigate to={view.redirect} replace />;
+
+  const scopeText = filters.allMonths ? 'All months' : `${monthName(month)}, plus items with no date`;
 
   return (
     <div className="tracker-page">
@@ -223,9 +264,39 @@ export function TrackerView({ kind }) {
 
       {t.status === 'ready' && (
         <>
-          <TrackModule view={view} items={items} />
-          <ContentTable view={view} items={items} onOpen={openItem} onCreate={startCreate} openId={openId} />
-          <MonthCalendar items={items} onOpen={openItem} onCreate={startCreate} />
+          <SummaryBoxes
+            stats={stats}
+            month={month}
+            today={today}
+            targetsHref={t.isAdmin ? `/admin/targets?month=${month}` : null}
+            label={`${view.title} in numbers`}
+            className="stat-boxes--page"
+          />
+          <TrackModule
+            view={view}
+            items={items}
+            aside={<WeekReminder view={view} items={items} projects={projects} onOpen={openItem} onOpenProject={ps.openProject} onShowWeek={showWeek} />}
+          />
+          <ContentTable view={view} items={items} filters={filters} onOpen={openItem} onCreate={startCreate} openId={openId} />
+          <MonthCalendar
+            items={items}
+            projects={projects}
+            onOpen={openItem}
+            onOpenProject={ps.openProject}
+            onCreate={startCreate}
+            showPic={view.showPic}
+            drag={moves}
+            flashWeek={flashWeek}
+          />
+          <StatusBoard
+            view={view}
+            items={filters.filtered}
+            onOpen={openItem}
+            filtersOn={filters.on}
+            onClearFilters={filters.clear}
+            scopeText={scopeText}
+            progress={!filters.on && !filters.allMonths && stats?.target ? { uploaded: stats.uploaded.total, target: stats.target.total } : null}
+          />
         </>
       )}
 
@@ -255,3 +326,5 @@ export function TrackerView({ kind }) {
     </div>
   );
 }
+
+const EMPTY_VIEW = { showBrand: false, brandChoices: [] };
