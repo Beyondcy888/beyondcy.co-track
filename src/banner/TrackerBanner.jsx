@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { SkeletonBlock } from '../components/skeleton/Skeleton.jsx';
 import { Popover } from '../ui/Popover.jsx';
 import { Spinner } from '../ui/bits.jsx';
 import { IconImage, IconMore, IconMove, IconTrash } from '../ui/icons.jsx';
@@ -15,16 +16,18 @@ function verticalOverflow(img) {
 }
 
 /**
- * The banner, edge to edge above the greeting (like Notion's cover). Without one, a quiet
- * "Add banner" appears when hovering the top of the page (and in the "⋯" menu for touch).
- * `ctl` comes from useBanner().
+ * The person's banner, edge to edge above the greeting (like Notion's cover; update v4 file 04:
+ * banners belong to people). Without one, staff get a quiet "Add banner" when hovering the top
+ * of the page (and in the "⋯" menu for touch). Admin sees a person's banner read-only, with
+ * Remove. `ctl` comes from useBanner().
  */
 export function TrackerBanner({ ctl }) {
   const imgRef = useRef(null);
   const drag = useRef(null);
-  const { banner, url, busy, repositioning, positionY } = ctl;
+  const [loaded, setLoaded] = useState(false);
+  const { banner, url, busy, repositioning, positionY, editable, removable } = ctl;
 
-  const input = (
+  const input = editable ? (
     <input
       ref={ctl.inputRef}
       type="file"
@@ -34,11 +37,12 @@ export function TrackerBanner({ ctl }) {
       aria-hidden="true"
       onChange={ctl.onFile}
     />
-  );
+  ) : null;
 
-  if (banner === undefined) return input; // still loading
+  if (banner === undefined) return input; // still loading: nothing to show yet
 
   if (!banner) {
+    if (!editable) return null; // Admin has no banner of their own
     return (
       <div className="banner-add-row">
         {input}
@@ -46,7 +50,7 @@ export function TrackerBanner({ ctl }) {
           {busy === 'upload' ? <Spinner label="Uploading the banner" /> : <IconImage width={15} height={15} />}
           {busy === 'upload' ? 'Uploading…' : 'Add banner'}
         </button>
-        <span className="banner-add-hint">Best size: 1500 × 600 px</span>
+        <span className="banner-add-hint">Your banner shows on every tracker page you open · best size 1500 × 600 px</span>
       </div>
     );
   }
@@ -81,16 +85,19 @@ export function TrackerBanner({ ctl }) {
   };
 
   return (
-    <div className={`banner${repositioning ? ' is-repositioning' : ''}`}>
+    <div className={`banner${repositioning ? ' is-repositioning' : ''}${editable ? '' : ' is-readonly'}`}>
       {input}
-      {url ? (
+      {/* the frame at its final size with a shimmer, then the image fades in (v4, file 11) */}
+      {!loaded && <SkeletonBlock className="banner-img banner-sk" height="100%" radius={0} />}
+      {url && (
         <img
           ref={imgRef}
-          className="banner-img"
+          className={`banner-img${loaded ? ' is-loaded' : ''}`}
           src={url}
           alt=""
           draggable={false}
           style={{ objectPosition: `50% ${positionY}%` }}
+          onLoad={() => setLoaded(true)}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -99,8 +106,6 @@ export function TrackerBanner({ ctl }) {
           aria-label={repositioning ? 'Banner position: use the up and down arrow keys, Enter to save' : undefined}
           onKeyDown={onKeyDown}
         />
-      ) : (
-        <div className="banner-img banner-loading" aria-hidden="true" />
       )}
 
       {repositioning ? (
@@ -117,7 +122,7 @@ export function TrackerBanner({ ctl }) {
             </button>
           </div>
         </>
-      ) : (
+      ) : editable ? (
         <div className="banner-actions">
           <button type="button" className="banner-btn" onClick={ctl.pickFile} disabled={Boolean(busy)}>
             Change banner
@@ -129,6 +134,15 @@ export function TrackerBanner({ ctl }) {
             Remove
           </button>
         </div>
+      ) : (
+        removable && (
+          <div className="banner-actions">
+            <span className="banner-owner">{ctl.ownerName ? `${ctl.ownerName}'s banner` : 'Banner'}</span>
+            <button type="button" className="banner-btn" onClick={ctl.remove} disabled={Boolean(busy)}>
+              Remove
+            </button>
+          </div>
+        )
       )}
 
       {(busy === 'upload' || busy === 'remove') && (
@@ -141,9 +155,10 @@ export function TrackerBanner({ ctl }) {
   );
 }
 
-/** The page's "⋯" menu: the banner actions, always reachable (touch has no hover). */
+/** The page's "⋯" menu: the banner actions, always reachable (touch has no hover). Nothing when there's nothing to do. */
 export function PageMenu({ ctl }) {
   const [anchor, setAnchor] = useState(null);
+  if (!ctl.editable && !(ctl.removable && ctl.banner)) return null;
   const run = (fn) => () => {
     setAnchor(null);
     fn();
@@ -162,8 +177,12 @@ export function PageMenu({ ctl }) {
         <span className="sr-only">More options</span>
       </button>
       {anchor && (
-        <Popover anchor={anchor} onClose={() => setAnchor(null)} label="Page options" width={230} className="page-menu">
-          {ctl.banner ? (
+        <Popover anchor={anchor} onClose={() => setAnchor(null)} label="Page options" width={240} className="page-menu">
+          {!ctl.editable ? (
+            <button type="button" className="menu-item" onClick={run(ctl.remove)} disabled={Boolean(ctl.busy)}>
+              <IconTrash /> Remove {ctl.ownerName ? `${ctl.ownerName}'s` : 'the'} banner
+            </button>
+          ) : ctl.banner ? (
             <>
               <button type="button" className="menu-item" onClick={run(ctl.pickFile)} disabled={Boolean(ctl.busy)}>
                 <IconImage /> Change banner

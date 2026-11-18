@@ -66,13 +66,16 @@ describe('plain dates', () => {
     expect(weekdayIndex('2026-11-08')).toBe(6); // Sunday
   });
 
-  it('builds a Monday-first calendar grid', () => {
+  it('builds a Sunday-first calendar grid (v4, file 03)', () => {
     const weeks = calendarWeeks('2026-11'); // 1 Nov 2026 is a Sunday
-    expect(weeks[0][0]).toEqual({ date: '2026-10-26', inMonth: false });
-    expect(weeks[0][6]).toEqual({ date: '2026-11-01', inMonth: true });
-    expect(weeks.length).toBe(6);
-    expect(weeks.at(-1).at(-1).date).toBe('2026-12-06');
+    expect(weeks[0][0]).toEqual({ date: '2026-11-01', inMonth: true });
+    expect(weeks.length).toBe(5);
+    expect(weeks.at(-1).at(-1).date).toBe('2026-12-05');
     expect(weeks.every((w) => w.length === 7)).toBe(true);
+    const dec = calendarWeeks('2026-12'); // 1 Dec 2026 is a Tuesday
+    expect(dec[0][0]).toEqual({ date: '2026-11-29', inMonth: false });
+    expect(dec[0][2]).toEqual({ date: '2026-12-01', inMonth: true });
+    expect(dec.at(-1).at(-1).date).toBe('2027-01-02');
   });
 });
 

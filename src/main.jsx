@@ -19,6 +19,11 @@ import './styles/brandcards.css';
 import './styles/reminder.css';
 import './styles/board.css';
 import './styles/projects.css';
+import './styles/skeleton.css';
+import './styles/skeleton-pages.css';
+import './styles/v4.css';
+import './styles/activity.css';
+import './styles/maintenance-admin.css';
 import App from './App.jsx';
 
 const root = createRoot(document.getElementById('root'));

@@ -7,14 +7,19 @@
 //   glow   only where `color` is too dark to glow on a dark card: the same hue, lifted.
 //          The card's glow uses `glow ?? color`.
 //   ratio  the logo's width ÷ height (wide wordmarks and compact marks get different slots)
+//   ghost  optional: a different file for the large faint background logo (+ ghostRatio);
+//          otherwise the card's logo is used there too
 //
 // The source files (and the ones not chosen) are in design-assets/tracker-brand-logo/.
 // Chosen by the criteria in 04 §2: reads on a dark background, highest resolution,
 // clear at small size, the official colour version. See docs/07 for the table.
+// Update v4 (file 07): Homy8 has the owner's newest logo. The orange H8 mark is the card's
+// logo (the tagline is too small to read at card size); the full logo (mark + MYEIGHT +
+// tagline, white lettering) is the faint background. Card colour #D88C38 (the logo's orange).
 export const BRAND_STYLE = {
   behomy: { logo: 'brand-logos/behomy.webp', color: '#F47F1F', ratio: 1.85 },
   behomy_group: { logo: 'brand-logos/behomy_group.webp', color: '#3C507E', glow: '#6E8BDB', ratio: 3.28 },
-  homy8: { logo: 'brand-logos/homy8.webp', color: '#F28106', ratio: 2.57 },
+  homy8: { logo: 'brand-logos/homy8.webp', color: '#D88C38', ratio: 1.45, ghost: 'brand-logos/homy8_full.webp', ghostRatio: 3.85 },
   beefix: { logo: 'brand-logos/beefix.webp', color: '#F2E70E', ratio: 2.61 },
   purnava: { logo: 'brand-logos/purnava.webp', color: '#4D674A', glow: '#8DB486', ratio: 0.99 },
   hoteru: { logo: 'brand-logos/hoteru.webp', color: '#4A4233', glow: '#BFA77A', ratio: 1.86 },

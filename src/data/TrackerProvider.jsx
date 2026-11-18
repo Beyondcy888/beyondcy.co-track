@@ -5,6 +5,8 @@ import { normalizeItem } from './api.js';
 import { useAuth } from '../auth/AuthContext.js';
 import { friendlyError } from '../lib/errors.js';
 import { monthEnd, monthStart } from '../lib/time.js';
+import { RevisionDialog } from '../review/RevisionDialog.jsx';
+import { useToast } from '../ui/Toast.jsx';
 
 const TrackerContext = createContext(null);
 
@@ -35,8 +37,9 @@ function applyById(list, event, row) {
 
 /**
  * Everything for one open tracker: its items (all months; pages filter in the client),
- * targets, banner and people, the mutations, and live updates.
- * Mounted with key={roleId}, so switching trackers starts clean.
+ * targets and people, the mutations (including Admin's review steps, v4 file 01), and
+ * live updates. Mounted with key={roleId}, so switching trackers starts clean.
+ * (Banners belong to people since v4: see banner/useBanner.js.)
  *
  * Without a roleId it serves the Admin dashboard instead: every tracker's items for
  * `month` (plus undated ones), every target, and live updates from all trackers.
@@ -45,11 +48,12 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
   const api = useApi();
   const { profile } = useAuth();
   const app = useAppData();
+  const toast = useToast();
   const all = !roleId;
 
   const [items, setItems] = useState([]);
   const [targets, setTargets] = useState([]);
-  const [banner, setBanner] = useState(undefined); // undefined = loading, null = none
+  const [revisionFor, setRevisionFor] = useState(null); // the Done item Admin is writing a revision note for
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
   const [live, setLive] = useState('connecting');
@@ -93,10 +97,9 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
       const m = monthRef.current;
       if (!quiet) setStatus('loading');
       const r = range();
-      const [i, t, b] = await Promise.all([
+      const [i, t] = await Promise.all([
         all ? api.listItemsForMonth(r.start, r.end) : api.listItems(roleId),
         all ? api.listAllTargets() : api.listTargets(roleId),
-        all ? Promise.resolve({ data: null, error: null }) : api.getBanner(roleId),
       ]);
       if (all && m !== monthRef.current) return; // the month changed meanwhile: a newer load is coming
       const failed = i.error || t.error;
@@ -109,7 +112,6 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
       }
       setItems((prev) => mergeRows(prev, (i.data ?? []).map((row) => normalizeItem(row))));
       setTargets(t.data ?? []);
-      if (!b.error) setBanner(b.data ?? null); // a banner problem never blocks the page
       setError(null);
       setStatus('ready');
       setLoadedMonth(m);
@@ -145,10 +147,6 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
         commentListeners.current.forEach((listener) => listener(event, row));
       },
       onTarget: (event, row) => setTargets((prev) => applyById(prev, event, row)),
-      onBanner: (event, row) => {
-        if (!row || row.role_id !== roleId) return;
-        setBanner(event === 'DELETE' ? null : row);
-      },
       onStatus: (s) => {
         if (s === 'SUBSCRIBED') {
           setLive('live');
@@ -236,14 +234,46 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
     [api, upsert],
   );
 
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  /** Deleting content also deletes its Notes pictures (v4, 02 §2: keep storage small). */
   const deleteItem = useCallback(
     async (id) => {
+      const pictures = itemsRef.current.find((x) => x.id === id)?.note_images ?? [];
       const r = await api.deleteItem(id);
-      if (!r.error) remove(id);
+      if (!r.error) {
+        remove(id);
+        if (pictures.length) api.removeNoteImages(pictures);
+      }
       return r;
     },
     [api, remove],
   );
+
+  // ------------------------------------------------------------ review steps (v4, file 01)
+  /** One review step = one update; the database refuses invalid steps with readable messages. */
+  const reviewStep = useCallback(
+    async (item, patch, done) => {
+      const r = await api.updateItem(item.id, patch);
+      if (r.error) {
+        toast(friendlyError(r.error), { tone: 'danger', duration: 6500 });
+        return r;
+      }
+      if (r.data) upsert(r.data);
+      if (done) toast(done);
+      return r;
+    },
+    [api, upsert, toast],
+  );
+  /** Admin: Done → Uploaded. */
+  const approveItem = useCallback((item) => reviewStep(item, { review_state: 'approved' }, 'Marked as Uploaded'), [reviewStep]);
+  /** Staff (or Admin): Revision → Done, back to Admin. */
+  const markItemDone = useCallback((item) => reviewStep(item, { review_state: 'done' }, 'Marked as Done. Admin will review it.'), [reviewStep]);
+  /** Admin: an Uploaded item that wasn't self-posted → back to Done. */
+  const moveBackToDone = useCallback((item) => reviewStep(item, { review_state: 'done' }, 'Moved back to Done'), [reviewStep]);
+  /** Admin: opens the "Request revision" dialog (the note is required). */
+  const requestRevision = useCallback((item) => setRevisionFor(item.id), []);
 
   /** Admin: change a target's "Status & notes" (dashboard). */
   const updateTargetNote = useCallback(
@@ -313,8 +343,6 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
       items,
       itemsById,
       targets,
-      banner,
-      setBanner,
       status,
       error,
       live,
@@ -328,16 +356,42 @@ export function TrackerProvider({ roleId = null, month = null, children }) {
       addComment,
       deleteComment,
       onCommentEvent,
+      approveItem,
+      markItemDone,
+      moveBackToDone,
+      requestRevision,
       api,
     }),
     [
       roleId, all, role, brands, team, membersOf, app.brandsForRole, app.rolesById, app.pillarsByBrand, app.brandsById,
-      app.peopleById, profile, items, itemsById, targets, banner, status, error, live, loadedMonth, load,
-      createItem, updateItem, moveItem, deleteItem, updateTargetNote, addComment, deleteComment, onCommentEvent, api,
+      app.peopleById, profile, items, itemsById, targets, status, error, live, loadedMonth, load,
+      createItem, updateItem, moveItem, deleteItem, updateTargetNote, addComment, deleteComment, onCommentEvent,
+      approveItem, markItemDone, moveBackToDone, requestRevision, api,
     ],
   );
 
-  return <TrackerContext.Provider value={value}>{children}</TrackerContext.Provider>;
+  const revisionItem = revisionFor ? itemsById.get(revisionFor) : null;
+
+  return (
+    <TrackerContext.Provider value={value}>
+      {children}
+      {revisionItem && (
+        <RevisionDialog
+          key={revisionItem.id}
+          item={revisionItem}
+          picName={app.peopleById[revisionItem.pic_id]?.display_name}
+          onClose={() => setRevisionFor(null)}
+          onSubmit={async (note) => {
+            const r = await api.updateItem(revisionItem.id, { review_state: 'revision', revision_note: note });
+            if (r.error) return friendlyError(r.error);
+            if (r.data) upsert(r.data);
+            toast(`Sent back to ${app.peopleById[revisionItem.pic_id]?.display_name ?? 'the PIC'} for a revision`);
+            return null;
+          }}
+        />
+      )}
+    </TrackerContext.Provider>
+  );
 }
 
 export function useTracker() {

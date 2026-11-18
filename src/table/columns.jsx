@@ -1,10 +1,12 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { STATUS_ORDER } from '../lib/fields.js';
-import { firstLink, referenceLines, safeHref, shortUrl } from '../lib/links.js';
+import { referenceLines, safeHref, shortLink } from '../lib/links.js';
+import { NoteThumbs } from '../notes/NotePictures.jsx';
 import { Person } from '../people/Avatar.jsx';
+import { ReviewButtons } from '../review/ReviewActions.jsx';
 import { NeedsPicBadge, RelativeTime, StatusPill, TypePill } from '../ui/bits.jsx';
 import { DateInput } from '../ui/DateInput.jsx';
-import { IconComment, IconExternal } from '../ui/icons.jsx';
+import { IconComment, IconImage } from '../ui/icons.jsx';
 
 const col = createColumnHelper();
 const stop = (e) => e.stopPropagation();
@@ -14,9 +16,10 @@ function Empty() {
   return <span className="dim">—</span>;
 }
 
+/** Text wraps and keeps the line breaks people typed (v4, 02 §1): rows grow like Google Sheets. */
 function TextCell({ getValue }) {
   const v = getValue();
-  return v ? <span className="cell-text">{v}</span> : <Empty />;
+  return v ? <span className="cell-text cell-wrap">{v}</span> : <Empty />;
 }
 
 function ContentCell({ row, table }) {
@@ -31,9 +34,27 @@ function ContentCell({ row, table }) {
         onOpen(item.id);
       }}
     >
-      <span className={`cell-text${item.content ? '' : ' dim'}`}>{titleOf(item)}</span>
+      <span className={`cell-text cell-wrap${item.content ? '' : ' dim'}`}>{titleOf(item)}</span>
       {!item.pic_id && !showPic && <NeedsPicBadge />}
     </button>
+  );
+}
+
+/** The status pill; on Done content Admin also gets the two review buttons (v4, file 01). */
+function StatusCell({ row, table }) {
+  const item = row.original;
+  const { isAdmin } = table.options.meta;
+  return (
+    <span className="status-cell">
+      <StatusPill status={item.status} />
+      {item.status === 'done' && !isAdmin && <span className="status-sub">Waiting for review</span>}
+      {item.status === 'revision' && item.revision_note && (
+        <span className="status-sub status-sub--revision" title={item.revision_note}>
+          {item.revision_note}
+        </span>
+      )}
+      {isAdmin && <ReviewButtons item={item} size="sm" className="status-review" />}
+    </span>
   );
 }
 
@@ -75,33 +96,73 @@ function DateCell({ row, table }) {
   );
 }
 
-function ReferenceCell({ row }) {
-  const text = row.original.reference;
-  if (!text) return <Empty />;
-  const link = firstLink(text);
-  const more = referenceLines(text).length - 1;
+/** Text and pictures (v4, 02 §2). A click opens the small Notes editor; a thumbnail opens the lightbox. */
+function NotesCell({ row, table }) {
+  const item = row.original;
+  const { onEditNotes } = table.options.meta;
+  const pictures = item.note_images?.length ?? 0;
   return (
-    <span className="cell-ref">
-      {link ? (
-        <a href={link.href} target="_blank" rel="noopener noreferrer" onClick={stop} className="cell-text">
-          {shortUrl(link.value)}
-        </a>
-      ) : (
-        <span className="cell-text">{referenceLines(text)[0]?.line}</span>
-      )}
-      {more > 0 && <span className="dim cell-more">+{more}</span>}
+    <div className="notes-cell">
+      <button
+        type="button"
+        className="notes-cell-open"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEditNotes(item.id, e.currentTarget);
+        }}
+        aria-label={`Edit Notes for ${titleOf(item)}${pictures ? `, ${pictures} picture${pictures === 1 ? '' : 's'}` : ''}`}
+      >
+        {item.notes ? <span className="cell-text cell-wrap">{item.notes}</span> : !pictures ? <Empty /> : null}
+        {!item.notes && pictures > 0 && (
+          <span className="notes-cell-pics-only">
+            <IconImage width={13} height={13} />
+            {pictures === 1 ? '1 picture' : `${pictures} pictures`}
+          </span>
+        )}
+      </button>
+      {pictures > 0 && <NoteThumbs item={item} size={36} />}
+    </div>
+  );
+}
+
+/** Every reference line, links clickable, wrapped (v4, 02 §1: nothing cut off). */
+function ReferenceCell({ row }) {
+  const lines = referenceLines(row.original.reference);
+  if (!lines.length) return <Empty />;
+  return (
+    <span className="cell-ref cell-wrap">
+      {lines.map((l, i) => (
+        <span key={i} className="cell-ref-line">
+          {l.parts.map((p, j) =>
+            p.type === 'link' ? (
+              <a key={j} href={p.href} target="_blank" rel="noopener noreferrer" onClick={stop}>
+                {shortLink(p.value, 40)}
+              </a>
+            ) : (
+              <span key={j}>{p.value}</span>
+            ),
+          )}
+        </span>
+      ))}
     </span>
   );
 }
 
-function InstagramCell({ row }) {
-  const href = safeHref(row.original.instagram_url);
-  if (!href) return <Empty />;
+/** Up to 5 links, each on its own line as a short label (domain + start of path), new tab. */
+function LinksCell({ row }) {
+  const links = row.original.links ?? [];
+  if (!links.length) return <Empty />;
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" onClick={stop} className="cell-ig">
-      <span className="cell-text">{shortUrl(href)}</span>
-      <IconExternal width={13} height={13} />
-    </a>
+    <span className="cell-links">
+      {links.map((link) => {
+        const href = safeHref(link);
+        return href ? (
+          <a key={link} href={href} target="_blank" rel="noopener noreferrer" onClick={stop} title={link}>
+            {shortLink(link)}
+          </a>
+        ) : null;
+      })}
+    </span>
   );
 }
 
@@ -136,10 +197,11 @@ const statusSort = (a, b, id) => STATUS_ORDER.indexOf(a.getValue(id)) - STATUS_O
 
 /**
  * Columns in the spec's order (02 §2); some only on certain pages. Sizes are the minimum
- * widths from 09 §3 (Content 260, Brief/Caption/Notes 280, Reference/Uploaded 220, others 110–160);
- * the table grows to the full width and scrolls sideways below that.
+ * widths from 09 §3 (Content 260, Brief/Caption/Notes 280, Reference/Links 220, others 110–160);
+ * the table grows to the full width and scrolls sideways below that. Admin's Status column is
+ * wider: it holds the review buttons on Done content (v4).
  */
-export function buildColumns({ showBrand, showPic, showPillars, brandName, personName }) {
+export function buildColumns({ showBrand, showPic, showPillars, brandName, personName, isAdmin = false }) {
   return [
     col.accessor((r) => (r.content ?? '').toLocaleLowerCase(), {
       id: 'content',
@@ -154,11 +216,11 @@ export function buildColumns({ showBrand, showPic, showPillars, brandName, perso
         cell: TextCell,
         size: 140,
       }),
-    col.accessor('status', { id: 'status', header: 'Status', cell: ({ getValue }) => <StatusPill status={getValue()} />, sortingFn: statusSort, size: 124 }),
+    col.accessor('status', { id: 'status', header: 'Status', cell: StatusCell, sortingFn: statusSort, size: isAdmin ? 176 : 150 }),
     col.accessor((r) => r.type ?? undefined, { id: 'type', header: 'Type', cell: TypeCell, sortUndefined: 'last', size: 116 }),
     col.accessor('brief', { id: 'brief', header: 'Brief', cell: TextCell, enableSorting: false, size: 280 }),
     col.accessor('caption', { id: 'caption', header: 'Caption', cell: TextCell, enableSorting: false, size: 280 }),
-    col.accessor('notes', { id: 'notes', header: 'Notes', cell: TextCell, enableSorting: false, size: 280 }),
+    col.accessor('notes', { id: 'notes', header: 'Notes', cell: NotesCell, enableSorting: false, size: 280 }),
     col.accessor((r) => r.publish_date ?? undefined, {
       id: 'publish_date',
       header: 'Publish date',
@@ -175,7 +237,7 @@ export function buildColumns({ showBrand, showPic, showPillars, brandName, perso
         enableSorting: false,
         size: 160,
       }),
-    col.accessor('instagram_url', { id: 'instagram', header: 'Uploaded content', cell: InstagramCell, enableSorting: false, size: 220 }),
+    col.accessor((r) => r.links ?? [], { id: 'links', header: 'Links', cell: LinksCell, enableSorting: false, size: 220 }),
     showPic &&
       col.accessor((r) => (r.pic_id ? personName(r.pic_id) : undefined), {
         id: 'pic',

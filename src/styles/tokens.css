@@ -23,6 +23,15 @@
   --status-not-started-light: #cdcad9;
   --status-planned-light: #abc9ff;
   --status-uploaded-light: #d2e9b0;
+  /* update v4 (file 01): Done = links added, waiting for Admin; Revision = Admin asked for changes */
+  --status-done: #f5b83d;
+  --status-done-light: #ffd98a;
+  --status-revision: #2b4ab8;
+  --status-revision-light: #9fb2ff;
+
+  /* update v4 (file 03): calendars start on Sunday, with a calm red Sunday column */
+  --sunday: #ff8a8a;
+  --sunday-tint: rgb(255 90 90 / 0.06);
 
   /* content type: always with its icon (▶ Reels, 2×2 grid Feed), never colour alone */
   --type-reels: #ff8a3d;

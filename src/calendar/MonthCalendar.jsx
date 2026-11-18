@@ -6,9 +6,10 @@ import { useToday } from '../data/useNow.js';
 import { useMediaQuery } from '../data/useMediaQuery.js';
 import { brandShort, STATUS_LABELS, TYPE_LABELS } from '../lib/fields.js';
 import { prefersReducedMotion } from '../lib/motion.js';
-import { calendarWeeks, formatLongDate, isInMonth, monthLabel, monthName, shiftMonth, WEEKDAYS_SHORT } from '../lib/time.js';
+import { CAL_WEEKDAYS, calendarWeeks, formatLongDate, isInMonth, monthLabel, monthName, shiftMonth } from '../lib/time.js';
 import { Avatar, AvatarStack, namesOf } from '../people/Avatar.jsx';
 import { useAppDataOptional } from '../data/AppDataProvider.jsx';
+import { ReviewButtons } from '../review/ReviewActions.jsx';
 import { Popover } from '../ui/Popover.jsx';
 import { StatusMark, TypeIcon } from '../ui/bits.jsx';
 import { IconCheck, IconChevronLeft, IconChevronRight, IconFlag, IconLock, IconPlus } from '../ui/icons.jsx';
@@ -98,7 +99,7 @@ function ItemChip({ item, onOpen, brandName, showPic, drag, origin, justMoved, d
     <button
       ref={setNodeRef}
       type="button"
-      className={`chip${movable ? ' is-movable' : ''}${locked ? ' is-locked' : ''}${isDragging ? ' is-dragging' : ''}${justMoved === item.id ? ' is-landed' : ''}`}
+      className={`chip${movable ? ' is-movable' : ''}${locked ? ' is-locked' : ''}${isDragging ? ' is-dragging' : ''}${justMoved === item.id ? ' is-landed' : ''}${item.status === 'revision' ? ' is-revision' : ''}`}
       onClick={() => {
         if (dragGuard?.() || deny.wasDenied()) return;
         onOpen(item.id);
@@ -169,7 +170,7 @@ function DayList({ date, items, projects, onOpen, onOpenProject, onCreate, ancho
             </li>
           ))}
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className={item.status === 'done' ? 'day-pop-review' : undefined}>
               <ItemChip
                 item={item}
                 brandName={brandName}
@@ -182,6 +183,8 @@ function DayList({ date, items, projects, onOpen, onOpenProject, onCreate, ancho
                   onOpen(id);
                 }}
               />
+              {/* Admin reviews Done content right from the day list (v4, file 01) */}
+              <ReviewButtons item={item} size="sm" className="day-pop-btns" />
             </li>
           ))}
         </ul>
@@ -218,6 +221,12 @@ export function CalendarLegend({ projects = true }) {
         <StatusMark status="uploaded" /> Uploaded
       </li>
       <li>
+        <StatusMark status="revision" /> Revision
+      </li>
+      <li>
+        <StatusMark status="done" /> Done
+      </li>
+      <li>
         <StatusMark status="planned" /> Planned
       </li>
       <li>
@@ -249,8 +258,9 @@ function DayCell({ date, className, isToday, dropHint, children }) {
 function NoDate({ count, dragging, children }) {
   const { setNodeRef, isOver, active } = useDroppable({ id: 'nodate', data: { nodate: true } });
   const data = active?.data.current;
-  // only dated content can lose its date; a project always has a deadline
-  const canTake = data?.kind === 'item' && Boolean(data.item.publish_date);
+  // only dated content can lose its date; a project always has a deadline, and content with
+  // links must keep every field (v4: the database refuses it)
+  const canTake = data?.kind === 'item' && Boolean(data.item.publish_date) && !(data.item.links?.length > 0);
   return (
     <aside ref={setNodeRef} className={`nodate${dragging && canTake ? ' is-target' : ''}${isOver && canTake ? ' is-over' : ''}`} aria-labelledby="nodate-title">
       <h3 id="nodate-title" className="nodate-title">
@@ -289,9 +299,9 @@ function MonthEdge({ dir, month }) {
 
 // ------------------------------------------------------------------ the calendar
 /**
- * Month grid (weeks start Monday, WIB "today" highlighted), items on their publish date,
- * projects on their deadline, and the No date list beside it (below under 1100px).
- * Shares the month with the track and table.
+ * Month grid (weeks start on Sunday with a red-tinted Sunday column, v4 file 03; WIB "today"
+ * highlighted), items on their publish date, projects on their deadline, and the No date list
+ * beside it (below under 1100px). Shares the month with the track and table.
  *
  *   onCreate         without it (the dashboard's all-brands calendar), days are not clickable for new content
  *   brandName(id)    puts the brand's short name on each chip
@@ -430,8 +440,8 @@ export function MonthCalendar({
         <table className={`cal${compact ? ' cal--compact' : ''}${onCreate ? '' : ' cal--readonly'}`}>
           <thead>
             <tr>
-              {WEEKDAYS_SHORT.map((d) => (
-                <th key={d} scope="col">
+              {CAL_WEEKDAYS.map((d, i) => (
+                <th key={d} scope="col" className={i === 0 ? 'is-sun' : undefined}>
                   <span aria-hidden="true">{compact ? d.charAt(0) : d}</span>
                   <span className="sr-only">{d}</span>
                 </th>
@@ -441,13 +451,13 @@ export function MonthCalendar({
           <tbody>
             {weeks.map((week) => (
               <tr key={week[0].date} className={flash === week[0].date ? 'is-flash' : undefined}>
-                {week.map(({ date, inMonth }) => {
+                {week.map(({ date, inMonth }, col) => {
                   const dayItems = byDate.get(date) ?? [];
                   const dayProjects = projectsByDate.get(date) ?? [];
                   const total = dayItems.length + dayProjects.length;
                   const isToday = date === today;
                   const day = Number(date.slice(8));
-                  const cls = `cal-day${inMonth ? '' : ' is-out'}${isToday ? ' is-today' : ''}`;
+                  const cls = `cal-day${inMonth ? '' : ' is-out'}${isToday ? ' is-today' : ''}${col === 0 ? ' is-sun' : ''}`;
 
                   if (!inMonth) {
                     return (

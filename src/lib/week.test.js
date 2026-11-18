@@ -16,15 +16,16 @@ const item = (id, publish_date, status, extra = {}) => ({ id, publish_date, stat
 const project = (id, due_date, status = 'open', extra = {}) => ({ id, due_date, status, created_at: '2026-11-01T00:00:00Z', ...extra });
 
 describe('weekRange', () => {
-  it('runs Monday to Sunday', () => {
-    expect(weekRange('2026-11-11')).toEqual({ start: '2026-11-09', end: '2026-11-15' }); // a Wednesday
-    expect(weekRange('2026-11-09')).toEqual({ start: '2026-11-09', end: '2026-11-15' }); // Monday
-    expect(weekRange('2026-11-15')).toEqual({ start: '2026-11-09', end: '2026-11-15' }); // Sunday
+  it('runs Sunday to Saturday (v4, file 03)', () => {
+    expect(weekRange('2026-11-11')).toEqual({ start: '2026-11-08', end: '2026-11-14' }); // a Wednesday
+    expect(weekRange('2026-11-08')).toEqual({ start: '2026-11-08', end: '2026-11-14' }); // Sunday
+    expect(weekRange('2026-11-14')).toEqual({ start: '2026-11-08', end: '2026-11-14' }); // Saturday
+    expect(weekRange('2026-11-15')).toEqual({ start: '2026-11-15', end: '2026-11-21' }); // the next Sunday starts a new week
   });
 
   it('covers exactly one week across a month boundary', () => {
-    expect(weekRange('2026-12-02')).toEqual({ start: '2026-11-30', end: '2026-12-06' });
-    expect(weekRange('2027-01-01')).toEqual({ start: '2026-12-28', end: '2027-01-03' });
+    expect(weekRange('2026-12-02')).toEqual({ start: '2026-11-29', end: '2026-12-05' });
+    expect(weekRange('2027-01-01')).toEqual({ start: '2026-12-27', end: '2027-01-02' });
   });
 });
 
@@ -128,7 +129,7 @@ describe('reminder', () => {
 
   it('works across a month boundary', () => {
     const r = reminder({ today: '2026-12-01', items: [item('nov', '2026-11-30', 'planned'), item('dec', '2026-12-05', 'not_started')] });
-    expect(r.week).toEqual({ start: '2026-11-30', end: '2026-12-06' });
+    expect(r.week).toEqual({ start: '2026-11-29', end: '2026-12-05' });
     expect(r.rows.map((x) => x.id)).toEqual(['nov', 'dec']);
     expect(r.overdue).toEqual([]);
   });
@@ -144,12 +145,20 @@ describe('boardColumns', () => {
       item('e', '2026-11-08', 'planned', { type: 'feed' }),
       item('f', '2026-11-01', 'uploaded', { type: 'feed' }),
     ]);
-    expect(cols.map((c) => c.key)).toEqual(['not_started', 'planned', 'uploaded']);
+    expect(cols.map((c) => c.key)).toEqual(['not_started', 'planned', 'done', 'revision', 'uploaded']);
     expect(cols[0].items.map((i) => i.id)).toEqual(['c', 'b']);
     expect(cols[0]).toMatchObject({ total: 2, reels: 0, feed: 1, untyped: 1 });
     expect(cols[1].items.map((i) => i.id)).toEqual(['e', 'a']);
     expect(cols[1]).toMatchObject({ total: 2, reels: 1, feed: 1, untyped: 0 });
-    expect(cols[2].items.map((i) => i.id)).toEqual(['f', 'd']);
+    expect(cols[2].total).toBe(0);
+    expect(cols[3].total).toBe(0);
+    expect(cols[4].items.map((i) => i.id)).toEqual(['f', 'd']);
+  });
+
+  it('puts Done and Revision in their own columns (v4)', () => {
+    const cols = boardColumns([item('a', '2026-11-03', 'done', { type: 'reels' }), item('b', '2026-11-04', 'revision', { type: 'feed' }), item('c', '2026-11-02', 'done', { type: 'feed' })]);
+    expect(cols.find((c) => c.key === 'done').items.map((i) => i.id)).toEqual(['c', 'a']);
+    expect(cols.find((c) => c.key === 'revision')).toMatchObject({ total: 1, feed: 1 });
   });
 
   it('isOverdueItem', () => {
@@ -157,6 +166,19 @@ describe('boardColumns', () => {
     expect(isOverdueItem(item('a', '2026-11-11', 'planned'), '2026-11-11')).toBe(false);
     expect(isOverdueItem(item('a', '2026-11-10', 'uploaded'), '2026-11-11')).toBe(false);
     expect(isOverdueItem(item('a', null, 'not_started'), '2026-11-11')).toBe(false);
+    // v4: Revision is still the PIC's job; Done is with Admin
+    expect(isOverdueItem(item('a', '2026-11-10', 'revision'), '2026-11-11')).toBe(true);
+    expect(isOverdueItem(item('a', '2026-11-10', 'done'), '2026-11-11')).toBe(false);
+  });
+
+  it('lists Revision in the reminder, never Done (v4)', () => {
+    const r = reminder({
+      today: '2026-11-11',
+      items: [item('rv', '2026-11-12', 'revision'), item('dn', '2026-11-12', 'done'), item('up', '2026-11-13', 'uploaded'), item('pl', '2026-11-12', 'planned')],
+    });
+    expect(r.rows.map((x) => x.id)).toEqual(['rv', 'pl']); // same day: Revision first
+    expect(r.finished).toBe(2);
+    expect(r.inReview).toBe(1);
   });
 });
 

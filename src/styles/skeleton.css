@@ -1,0 +1,129 @@
+/* Skeleton loading (update v4, file 11). Shapes are --raised on the normal surfaces; a slow,
+   soft highlight sweeps across (transform only). Reduced motion: calm static shapes. */
+
+.sk-region {
+  /* shown only when loading takes longer than ~150 ms: the space is kept, the shapes appear late */
+  animation: sk-appear 0.22s ease 150ms both;
+}
+
+.sk-shapes {
+  display: contents;
+}
+
+@keyframes sk-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sk {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  flex: none;
+  background: var(--raised);
+  border-radius: 8px;
+  isolation: isolate;
+}
+
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.055) 45%, rgb(255 255 255 / 0.085) 50%, rgb(255 255 255 / 0.055) 55%, transparent 80%);
+  transform: translateX(-100%);
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes sk-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* on a raised surface (cards, the drawer's inputs) the shape steps up one level */
+.sk-on-raised .sk,
+.sk.sk--hi {
+  background: var(--raised-hi);
+}
+
+.sk-line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.sk-line--xs {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.sk-line--sm {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.sk-line--lg {
+  height: 16px;
+  border-radius: 7px;
+}
+
+.sk-line--xl {
+  height: 24px;
+  border-radius: 9px;
+}
+
+.sk-line--num {
+  height: 40px;
+  border-radius: 10px;
+}
+
+.sk-circle {
+  border-radius: 50%;
+}
+
+.sk-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sk-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sk-row-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sk-fade-in {
+  animation: sk-fade 0.15s ease both;
+}
+
+@keyframes sk-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk::after {
+    display: none;
+  }
+
+  .sk-region {
+    animation-duration: 0.01s;
+  }
+
+  .sk-fade-in {
+    animation: none;
+  }
+}

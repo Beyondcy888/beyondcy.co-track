@@ -1,4 +1,4 @@
-/* Tracker banner (09 §5): edge to edge of the main column, above the greeting.
+/* The banner (09 §5; one per PERSON since v4, file 04): edge to edge of the main column, above the greeting.
    Designed for 1500 × 600; height = min(width × 0.4, 40vh), at least 160px. */
 
 .banner {
@@ -22,15 +22,33 @@
   -webkit-user-drag: none;
 }
 
-.banner-loading {
-  background: linear-gradient(100deg, var(--panel) 30%, var(--raised) 50%, var(--panel) 70%) 0 0 / 300% 100%;
-  animation: banner-shimmer 1.4s linear infinite;
+/* v4 (file 11): the frame at its final size with a shimmer, then the image fades in */
+.banner-sk {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
 }
 
-@keyframes banner-shimmer {
-  to {
-    background-position: -150% 0;
-  }
+.banner-img:not(.banner-sk) {
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.banner-img.is-loaded {
+  opacity: 1;
+}
+
+/* Admin looking at a person's banner: read-only, with their name and Remove */
+.banner-owner {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: rgb(19 18 24 / 0.6);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
 }
 
 .banner.is-repositioning .banner-img {

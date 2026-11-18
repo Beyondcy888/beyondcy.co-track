@@ -1,8 +1,15 @@
-// The tracker banner (09 §5): one per tracker, shared by its members and Admin.
-// Files live in the private bucket at tracker-banners/<role_id>/<uuid>.webp and are shown
-// through signed URLs (1 hour), cached and refreshed before they expire.
+// Banners belong to people (update v4, file 04): one per person, shown at the top of every
+// tracker page they open (My work, Master, brand pages), and it follows them to any tracker.
+//   - staff: add, change, reposition and remove their own (1500×600 recommended, JPG/PNG/WebP,
+//     max 5 MB, converted to WebP ≤ 1500 px wide before upload)
+//   - Admin has no banner. On a tracker with exactly one active person, Admin sees that
+//     person's banner, read-only, and may remove it (with a confirmation). Behomy Master
+//     (several people) shows none (default chosen by Claude).
+// Files live in the private bucket user-banners at <profile_id>/<uuid>.webp and are shown
+// through signed URLs (1 hour), cached and refreshed before they expire. Saving = upload →
+// upsert the row → delete the old file; removing = delete the row, then the file.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTracker } from '../data/TrackerProvider.jsx';
+import { useApi } from '../data/ApiContext.js';
 import { BANNER_TOO_BIG, BANNER_WRONG_TYPE, friendlyError } from '../lib/errors.js';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { useToast } from '../ui/Toast.jsx';
@@ -85,7 +92,7 @@ export function useSignedUrl(api, path) {
         schedule(hit.expires);
         return;
       }
-      const r = await api.bannerUrl(path);
+      const r = await api.userBannerUrl(path);
       if (!alive) return;
       if (r.error || !r.data) {
         setState({ path, url: null });
@@ -106,29 +113,58 @@ export function useSignedUrl(api, path) {
   return path && state.path === path ? state.url : null;
 }
 
-// ------------------------------------------------------------------ actions
-export function useBanner() {
-  const t = useTracker();
+// ------------------------------------------------------------------ whose banner, and what you may do
+/**
+ * `profileId`: whose banner the page shows (null = none). `me`: the signed-in person.
+ * `isAdmin`: Admin may remove anyone's (read-only otherwise). `ownerName`: for Admin's wording.
+ */
+export function useBanner({ profileId, me, isAdmin = false, ownerName = null }) {
+  const api = useApi();
   const toast = useToast();
   const confirm = useConfirm();
   const inputRef = useRef(null);
+  const [banner, setBanner] = useState(undefined); // undefined = loading, null = none
   const [busy, setBusy] = useState(null); // 'upload' | 'remove' | 'position'
   const [draftY, setDraftY] = useState(null); // number while repositioning
-  const banner = t.banner;
-  const url = useSignedUrl(t.api, banner?.image_path);
+  const editable = Boolean(profileId) && profileId === me && !isAdmin;
+  const removable = Boolean(profileId) && (editable || isAdmin);
+  const url = useSignedUrl(api, banner?.image_path);
 
-  // a teammate removed it while we were repositioning
+  // load + live updates (the person's other open tabs, or Admin removing it)
+  useEffect(() => {
+    if (!profileId) {
+      setBanner(null);
+      return undefined;
+    }
+    let alive = true;
+    setBanner(undefined);
+    api.getUserBanner(profileId).then((r) => {
+      if (alive) setBanner(r.error ? null : r.data ?? null); // a banner problem never blocks the page
+    });
+    const unsubscribe = api.subscribeUserBanners((event, row) => {
+      if (!row || row.profile_id !== profileId) return;
+      setBanner(event === 'DELETE' ? null : row);
+    });
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, [api, profileId]);
+
+  // removed elsewhere while repositioning
   useEffect(() => {
     if (!banner) setDraftY(null);
   }, [banner]);
 
-  const pickFile = useCallback(() => inputRef.current?.click(), []);
+  const pickFile = useCallback(() => {
+    if (editable) inputRef.current?.click();
+  }, [editable]);
 
   const onFile = useCallback(
     async (e) => {
       const file = e.target.files?.[0];
       e.target.value = ''; // picking the same file again still fires
-      if (!file) return;
+      if (!file || !editable) return;
       const problem = checkBannerFile(file);
       if (problem) {
         toast(problem, { tone: 'danger', duration: 6000 });
@@ -138,16 +174,16 @@ export function useBanner() {
       const oldPath = banner?.image_path ?? null;
       try {
         const { blob, ext } = await prepareBanner(file);
-        const up = await t.api.uploadBannerFile(t.roleId, blob, ext);
+        const up = await api.uploadUserBannerFile(profileId, blob, ext);
         if (up.error) throw up.error;
-        const saved = await t.api.saveBanner({ roleId: t.roleId, imagePath: up.data.path, positionY: 50 });
+        const saved = await api.saveUserBanner({ profileId, imagePath: up.data.path, positionY: 50 });
         if (saved.error) {
-          t.api.removeBannerFile(up.data.path);
+          api.removeUserBannerFile(up.data.path);
           throw saved.error;
         }
-        t.setBanner(saved.data);
+        setBanner(saved.data);
         setDraftY(null);
-        if (oldPath && oldPath !== up.data.path) t.api.removeBannerFile(oldPath); // the previous file
+        if (oldPath && oldPath !== up.data.path) api.removeUserBannerFile(oldPath); // the previous file
         toast(oldPath ? 'Banner changed' : 'Banner added');
       } catch (err) {
         toast(friendlyError(err), { tone: 'danger', duration: 6500 });
@@ -155,34 +191,38 @@ export function useBanner() {
         setBusy(null);
       }
     },
-    [banner, t, toast],
+    [api, banner, editable, profileId, toast],
   );
 
   const remove = useCallback(async () => {
-    if (!banner) return;
-    const ok = await confirm({
-      title: 'Remove the banner?',
-      body: 'It disappears for everyone in this tracker.',
-      confirmLabel: 'Remove banner',
-      tone: 'danger',
-    });
+    if (!banner || !removable) return;
+    const ok = await confirm(
+      editable
+        ? { title: 'Remove your banner?', body: 'It disappears from every tracker page you open.', confirmLabel: 'Remove banner', tone: 'danger' }
+        : {
+            title: `Remove ${ownerName ?? 'this person'}'s banner?`,
+            body: 'It disappears from their tracker pages. They can add a new one any time.',
+            confirmLabel: 'Remove banner',
+            tone: 'danger',
+          },
+    );
     if (!ok) return;
     setBusy('remove');
     const path = banner.image_path;
-    const r = await t.api.deleteBanner(t.roleId);
+    const r = await api.deleteUserBanner(profileId);
     setBusy(null);
     if (r.error) {
       toast(friendlyError(r.error), { tone: 'danger', duration: 6000 });
       return;
     }
-    t.setBanner(null);
-    t.api.removeBannerFile(path);
+    setBanner(null);
+    api.removeUserBannerFile(path);
     toast('Banner removed');
-  }, [banner, confirm, t, toast]);
+  }, [api, banner, confirm, editable, ownerName, profileId, removable, toast]);
 
   const startReposition = useCallback(() => {
-    if (banner) setDraftY(Number(banner.position_y ?? 50));
-  }, [banner]);
+    if (banner && editable) setDraftY(Number(banner.position_y ?? 50));
+  }, [banner, editable]);
 
   const cancelReposition = useCallback(() => setDraftY(null), []);
 
@@ -190,20 +230,23 @@ export function useBanner() {
     if (draftY == null) return;
     const y = Math.round(draftY * 100) / 100;
     setBusy('position');
-    const r = await t.api.setBannerPosition(t.roleId, y);
+    const r = await api.setUserBannerPosition(profileId, y);
     setBusy(null);
     if (r.error) {
       toast(friendlyError(r.error), { tone: 'danger', duration: 6000 });
       return;
     }
-    t.setBanner(r.data);
+    setBanner(r.data);
     setDraftY(null);
-  }, [draftY, t, toast]);
+  }, [api, draftY, profileId, toast]);
 
   return {
     banner,
     url,
     busy,
+    editable,
+    removable,
+    ownerName,
     repositioning: draftY != null,
     positionY: draftY ?? Number(banner?.position_y ?? 50),
     setDraftY,

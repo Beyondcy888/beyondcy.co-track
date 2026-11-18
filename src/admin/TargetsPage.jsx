@@ -11,6 +11,7 @@ import { isValidMonth, monthName, monthStart, shiftMonth } from '../lib/time.js'
 import { useConfirm } from '../ui/Confirm.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { Spinner, TypeIcon } from '../ui/bits.jsx';
+import { TargetsSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { IconCheck } from '../ui/icons.jsx';
 
 const digits = (v) => String(v ?? '').replace(/\D/g, '').slice(0, 3);
@@ -419,11 +420,7 @@ export function TargetsPage() {
         Total − Reels. A row saves when you leave it; Esc undoes. Staff see their own tracker's targets but can't change them.
       </p>
 
-      {data.status === 'loading' && (
-        <div className="loading-block">
-          <Spinner label="Loading targets" /> Loading targets
-        </div>
-      )}
+      {data.status === 'loading' && <TargetsSkeleton />}
       {data.status === 'error' && (
         <div className="notice notice-danger" role="alert">
           <div>

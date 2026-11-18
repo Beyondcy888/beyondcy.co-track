@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { Link, NavLink, useLocation, useMatch } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext.js';
 import { useAppData } from '../data/AppDataProvider.jsx';
+import { useMaintenance } from '../maintenance/MaintenanceProvider.jsx';
+import { NotificationsSwitch } from '../push/NotificationsSwitch.jsx';
 import { trackerPages } from './nav.js';
 import { useSidebar } from './sidebarState.js';
 import { AvatarEditor } from '../people/AvatarEditor.jsx';
 import { Logo, LogoMark } from '../ui/bits.jsx';
-import { IconFlag, IconGrid, IconLayers, IconLogOut, IconMenu, IconPanel, IconTarget, IconUser, IconUsers, IconX } from '../ui/icons.jsx';
+import { IconActivity, IconFlag, IconGrid, IconLayers, IconLogOut, IconMenu, IconPanel, IconTarget, IconUser, IconUsers, IconWrench, IconX } from '../ui/icons.jsx';
 
 function NavIcon({ icon, initial }) {
   if (icon === 'master') return <IconLayers />;
@@ -15,6 +17,8 @@ function NavIcon({ icon, initial }) {
   if (icon === 'grid') return <IconGrid />;
   if (icon === 'target') return <IconTarget />;
   if (icon === 'flag') return <IconFlag />;
+  if (icon === 'activity') return <IconActivity />;
+  if (icon === 'wrench') return <IconWrench />;
   return <span className="nav-initial">{initial}</span>;
 }
 
@@ -60,6 +64,7 @@ export function Sidebar() {
   const { profile, signOut } = useAuth();
   const app = useAppData();
   const sb = useSidebar();
+  const maintenance = useMaintenance();
   const location = useLocation();
   const match = useMatch('/t/:roleId/*');
 
@@ -135,6 +140,7 @@ export function Sidebar() {
               <NavItem to="/" end label="Dashboard" icon="grid" />
               <NavItem to="/admin/targets" label="Targets" icon="target" />
               <NavItem to="/admin/projects" label="Projects" icon="flag" />
+              <NavItem to="/admin/activity" label="Activity Logs" icon="activity" />
 
               <p className="nav-section nav-wide">Trackers</p>
               <ul className="nav-wide">
@@ -182,6 +188,8 @@ export function Sidebar() {
 
               <span className="nav-sep" aria-hidden="true" />
               <NavItem to="/admin/people" label="People" icon="people" />
+              {/* only the Admin Beyondcy account (update v4, file 10) */}
+              {maintenance.exempt === true && <NavItem to="/admin/maintenance" label="Maintenance" icon="wrench" />}
             </>
           ) : (
             <>
@@ -198,8 +206,9 @@ export function Sidebar() {
         </nav>
 
         <div className="sidebar-foot">
-          {/* your own photo: click it to upload, adjust or remove (update v3, file 03) */}
-          <AvatarEditor personId={profile?.id} size={32} className="who-photo" />
+          {/* your own photo: click it to upload, adjust or remove (update v3, file 03); the same
+              menu holds the Notifications switch (update v4, file 06) */}
+          <AvatarEditor personId={profile?.id} size={32} className="who-photo" menuExtra={<NotificationsSwitch />} />
           <div className="who">
             <span className="who-name truncate">{profile?.display_name}</span>
             <span className="who-role">

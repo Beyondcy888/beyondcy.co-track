@@ -1,23 +1,28 @@
-// The status board (update v3, 05 §4): Not started · Planned · Uploaded.
+// The status board (update v3, 05 §4; five columns since v4, file 01):
+// Not started · Planned · Done · Revision · Uploaded.
 // Display only: it shows where every piece of content stands. No dragging between columns
-// (status changes by itself when fields and the Instagram link are filled); clicking a card
-// opens the item. It shows the same items as the table on the page (same month, same filters).
+// (the database sets the status from the fields, the links and Admin's review); clicking a
+// card opens the item. Admin reviews Done cards right here. It shows the same items as the
+// table on the page (same month, same filters).
 import { useMemo, useState } from 'react';
 import { useTracker } from '../data/TrackerProvider.jsx';
 import { useToday } from '../data/useNow.js';
 import { STATUS_LABELS, TYPE_LABELS } from '../lib/fields.js';
-import { safeHref } from '../lib/links.js';
+import { safeHref, shortLink } from '../lib/links.js';
 import { formatWeekdayDate } from '../lib/time.js';
 import { boardColumns, isOverdueItem } from '../lib/week.js';
 import { Person } from '../people/Avatar.jsx';
+import { ReviewButtons } from '../review/ReviewActions.jsx';
 import { NeedsPicBadge, TypeIcon, TypePill } from '../ui/bits.jsx';
-import { IconCalendar, IconComment, IconInstagram } from '../ui/icons.jsx';
+import { IconCalendar, IconComment, IconLink } from '../ui/icons.jsx';
 
 const FIRST = 8;
 
 const EMPTY_TEXT = {
   not_started: 'Nothing waiting to be filled in.',
   planned: 'Nothing ready to post yet.',
+  done: 'Nothing waiting for review.',
+  revision: 'No revisions requested.',
   uploaded: 'Nothing uploaded yet.',
 };
 
@@ -26,9 +31,11 @@ function Card({ item, showBrand, onOpen, today, brandName }) {
   const overdue = isOverdueItem(item, today);
   const missing = item.missing_fields?.length ?? 0;
   const comments = item.comment_count ?? 0;
-  const ig = item.status === 'uploaded' ? safeHref(item.instagram_url) : null;
+  const firstLink = ['done', 'revision', 'uploaded'].includes(item.status) ? item.links?.[0] : null;
+  const href = firstLink ? safeHref(firstLink) : null;
+  const noteLine = item.status === 'revision' && item.revision_note ? item.revision_note.split(/\r?\n/).find((l) => l.trim()) : null;
   return (
-    <li className={`bcard${overdue ? ' is-overdue' : ''}`}>
+    <li data-id={item.id} className={`bcard${overdue ? ' is-overdue' : ''}${item.status === 'revision' ? ' is-revision' : ''}`}>
       {showBrand && <span className="bcard-brand truncate">{brandName(item.brand_id)}</span>}
       <button type="button" className="bcard-open" onClick={() => onOpen(item.id)}>
         <span className={`bcard-title${item.content ? '' : ' dim'}`}>{title}</span>
@@ -37,9 +44,15 @@ function Card({ item, showBrand, onOpen, today, brandName }) {
           {item.type ? `, ${TYPE_LABELS[item.type]}` : ''}
         </span>
       </button>
+      {noteLine && (
+        <p className="bcard-note" title={item.revision_note}>
+          {noteLine}
+        </p>
+      )}
       <span className="bcard-mid">
         <span className="bcard-tags">
           {item.type ? <TypePill type={item.type} /> : <span className="bcard-notype">No type yet</span>}
+          {item.status === 'done' && <span className="bcard-tag bcard-tag--review">Waiting for review</span>}
           {overdue && <span className="bcard-tag bcard-tag--late">Overdue</span>}
         </span>
         <span className="bcard-who">{item.pic_id ? <Person id={item.pic_id} size={20} /> : <NeedsPicBadge />}</span>
@@ -60,13 +73,14 @@ function Card({ item, showBrand, onOpen, today, brandName }) {
             <span className="mono">{comments}</span>
           </span>
         )}
-        {ig && (
-          <a className="bcard-ig" href={ig} target="_blank" rel="noopener noreferrer" title="Open the Instagram post">
-            <IconInstagram width={15} height={15} />
-            <span className="sr-only">Open the Instagram post for {title}</span>
+        {href && (
+          <a className="bcard-ig" href={href} target="_blank" rel="noopener noreferrer" title={`Open ${shortLink(firstLink)}${item.links.length > 1 ? ` (+${item.links.length - 1} more in the item)` : ''}`}>
+            <IconLink width={15} height={15} />
+            <span className="sr-only">Open the link for {title}</span>
           </a>
         )}
       </span>
+      <ReviewButtons item={item} size="sm" className="bcard-review" />
     </li>
   );
 }

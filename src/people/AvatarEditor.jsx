@@ -271,7 +271,8 @@ function CropDialog({ source, title, personName, onCancel, onSave }) {
  * The person's photo as a button that opens the photo menu. Shown as a plain avatar
  * when this viewer can't change it (staff looking at someone else).
  */
-export function AvatarEditor({ personId, size = 32, className = '' }) {
+/** `menuExtra`: more rows under the photo options (the sidebar adds the Notifications switch, v4 file 06). */
+export function AvatarEditor({ personId, size = 32, className = '', menuExtra = null }) {
   const api = useApi();
   const app = useAppData();
   const { profile } = useAuth();
@@ -379,7 +380,7 @@ export function AvatarEditor({ personId, size = 32, className = '' }) {
       <input ref={inputRef} type="file" accept={AVATAR_INPUT_TYPES.join(',')} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onFile} />
 
       {menu && (
-        <Popover anchor={menu} onClose={closeMenu} label="Profile photo" width={210} role="menu" className="avatar-menu">
+        <Popover anchor={menu} onClose={closeMenu} label={menuExtra ? 'Your menu' : 'Profile photo'} width={menuExtra ? 268 : 210} role="menu" className="avatar-menu">
           <button
             type="button"
             role="menuitem"
@@ -400,6 +401,12 @@ export function AvatarEditor({ personId, size = 32, className = '' }) {
             <button type="button" role="menuitem" className="menu-item menu-item--danger" onClick={remove}>
               <IconTrash /> Remove
             </button>
+          )}
+          {menuExtra && (
+            <>
+              <span className="menu-sep" role="separator" />
+              {menuExtra}
+            </>
           )}
         </Popover>
       )}

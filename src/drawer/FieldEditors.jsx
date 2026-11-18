@@ -63,6 +63,7 @@ export function TextDraftField({
   children,
   inputMode,
   type = 'text',
+  onPaste,
 }) {
   const { updateItem, me } = useTracker();
   const toast = useToast();
@@ -170,6 +171,7 @@ export function TextDraftField({
     'aria-invalid': error ? 'true' : undefined,
     'aria-describedby': error ? `${id}-error` : hint ? `${id}-hint` : undefined,
     onChange: (e) => setDraft(e.target.value),
+    onPaste,
     onFocus: () => {
       focusedRef.current = true;
     },

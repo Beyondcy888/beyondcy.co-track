@@ -1,18 +1,16 @@
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
-import { Logo, Spinner } from '../ui/bits.jsx';
+import { Logo } from '../ui/bits.jsx';
+import { AppSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { homePathFor } from '../layout/nav.js';
 import { SidebarReveal } from '../layout/Sidebar.jsx';
 
 export const NO_TRACKER = "Your account doesn't have a tracker yet. Ask Admin Beyondcy.";
 export const INACTIVE = 'Your account is inactive. Ask Admin Beyondcy.';
 
+/** Before the person and setup data are known: the app shell as a skeleton (update v4, file 11). */
 export function FullScreenLoading({ label = 'Loading' }) {
-  return (
-    <div className="center-screen">
-      <Spinner label={label} />
-    </div>
-  );
+  return <AppSkeleton label={label} />;
 }
 
 /** A clear message and nothing else (01 security rule 4). */

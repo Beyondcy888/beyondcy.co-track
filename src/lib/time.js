@@ -15,8 +15,10 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // Monday first
+const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // names, by weekdayIndex()
 const WEEKDAYS_LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+/** Calendar columns (update v4, file 03): every calendar starts on Sunday. */
+export const CAL_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export { WEEKDAYS_SHORT };
 
@@ -94,9 +96,14 @@ function isoFromUtc(date) {
   return date.toISOString().slice(0, 10);
 }
 
-/** 0 = Monday … 6 = Sunday */
+/** 0 = Monday … 6 = Sunday (for weekday names) */
 export function weekdayIndex(isoDate) {
   return (utc(isoDate).getUTCDay() + 6) % 7;
+}
+
+/** 0 = Sunday … 6 = Saturday (the calendar's columns and the this-week range) */
+export function sundayIndex(isoDate) {
+  return utc(isoDate).getUTCDay();
 }
 
 export function addDays(isoDate, n) {
@@ -138,13 +145,13 @@ export function formatLongDate(isoDate) {
 }
 
 /**
- * The calendar grid for a month: weeks start on Monday, leading and trailing
- * days from the neighbouring months fill the first and last week.
+ * The calendar grid for a month: weeks start on Sunday (update v4, file 03), leading and
+ * trailing days from the neighbouring months fill the first and last week.
  * Returns [{ date: 'YYYY-MM-DD', inMonth: boolean }][] (one array per week).
  */
 export function calendarWeeks(month) {
   const first = monthStart(month);
-  const lead = weekdayIndex(first);
+  const lead = sundayIndex(first);
   const total = Math.ceil((lead + daysInMonth(month)) / 7) * 7;
   const start = addDays(first, -lead);
   const weeks = [];

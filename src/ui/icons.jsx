@@ -193,3 +193,45 @@ export const IconHistory = make(
     <path d="M4.5 5.5v3.6h3.6M12 8.5V12l2.5 1.8" />
   </>,
 );
+
+// ------------------------------------------------------------ update v4
+/** Content plan view (a table). */
+export const IconTable = make(
+  <>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10" />
+  </>,
+);
+/** Status board view (columns). */
+export const IconColumns = make(
+  <>
+    <rect x="3.5" y="4.5" width="5" height="15" rx="1.5" />
+    <rect x="9.5" y="4.5" width="5" height="10" rx="1.5" />
+    <rect x="15.5" y="4.5" width="5" height="12.5" rx="1.5" />
+  </>,
+);
+/** "Changed in Supabase": a database. */
+export const IconDatabase = make(
+  <>
+    <ellipse cx="12" cy="6" rx="7" ry="2.75" />
+    <path d="M5 6v6c0 1.5 3.1 2.75 7 2.75s7-1.25 7-2.75V6" />
+    <path d="M5 12v6c0 1.5 3.1 2.75 7 2.75s7-1.25 7-2.75v-6" />
+  </>,
+);
+/** Activity Logs. */
+export const IconActivity = make(<path d="M3.5 12h3.5l2.5-6.5 5 13 2.5-6.5h3.5" />);
+/** Maintenance. */
+export const IconWrench = make(<path d="M14.6 6.2a4 4 0 0 0 5 5L17.4 13.4l-1.9-.4-6.9 6.9a2 2 0 0 1-2.8-2.8l6.9-6.9-.4-1.9z" />);
+/** Notifications. */
+export const IconBell = make(
+  <>
+    <path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2H5z" />
+    <path d="M10 20.5a2 2 0 0 0 4 0" />
+  </>,
+);
+export const IconRefresh = make(
+  <>
+    <path d="M19 12a7 7 0 1 1-2.05-4.95" />
+    <path d="M19.5 4.5v4h-4" />
+  </>,
+);

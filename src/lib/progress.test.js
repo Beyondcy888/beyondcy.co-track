@@ -53,7 +53,16 @@ describe('counting', () => {
       item('uploaded', '2026-10-31'), // other month
       item('not_started', null), // no date: never counts
     ];
-    expect(countStatuses(items, month)).toEqual({ uploaded: 2, planned: 1, notStarted: 1 });
+    expect(countStatuses(items, month)).toEqual({ uploaded: 2, done: 0, revision: 0, planned: 1, notStarted: 1 });
+    // v4: Done and Revision are counted on their own, never as uploads
+    expect(countStatuses([item('done', '2026-11-03'), item('revision', '2026-11-04'), item('done', '2026-11-05')], month)).toEqual({
+      uploaded: 0,
+      done: 2,
+      revision: 1,
+      planned: 0,
+      notStarted: 0,
+    });
+    expect(uploadedByType([item('done', '2026-11-03'), item('uploaded', '2026-11-03')], month).total).toBe(1);
     expect(countNoDate([item('planned', null), item('uploaded', '2026-11-01'), item('not_started', null)])).toBe(2);
   });
 
@@ -196,9 +205,12 @@ describe('status and pace', () => {
 
 describe('dotPlan', () => {
   it('orders uploaded, planned, then remaining; bonus past the target', () => {
-    expect(dotPlan({ target: 10, uploaded: 7, planned: 2 })).toEqual({ total: 10, filled: 7, ring: 2, empty: 1, bonus: 0 });
-    expect(dotPlan({ target: 10, uploaded: 7, planned: 9 })).toEqual({ total: 10, filled: 7, ring: 3, empty: 0, bonus: 0 });
-    expect(dotPlan({ target: 25, uploaded: 30, planned: 4 })).toEqual({ total: 25, filled: 25, ring: 0, empty: 0, bonus: 5 });
+    expect(dotPlan({ target: 10, uploaded: 7, planned: 2 })).toEqual({ total: 10, filled: 7, review: 0, revision: 0, ring: 2, empty: 1, bonus: 0 });
+    expect(dotPlan({ target: 10, uploaded: 7, planned: 9 })).toEqual({ total: 10, filled: 7, review: 0, revision: 0, ring: 3, empty: 0, bonus: 0 });
+    expect(dotPlan({ target: 25, uploaded: 30, planned: 4 })).toEqual({ total: 25, filled: 25, review: 0, revision: 0, ring: 0, empty: 0, bonus: 5 });
+    // v4: waiting for review (amber) and revision come after the uploads, before planned
+    expect(dotPlan({ target: 10, uploaded: 3, review: 2, revision: 1, planned: 2 })).toEqual({ total: 10, filled: 3, review: 2, revision: 1, ring: 2, empty: 2, bonus: 0 });
+    expect(dotPlan({ target: 4, uploaded: 3, review: 5, revision: 1, planned: 2 })).toEqual({ total: 4, filled: 3, review: 1, revision: 0, ring: 0, empty: 0, bonus: 0 });
   });
 });
 

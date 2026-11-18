@@ -2,8 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { joinWords, lockHint, requiredFields } from './fields.js';
 import { friendlyError, labelMissing, loginError } from './errors.js';
-import { firstLink, isInstagramUrl, linkifyLine, referenceLines, safeHref, shortUrl } from './links.js';
-import { describeActivity, formatValue } from './history.js';
+import { cleanLinks, firstLink, isWebLink, linkifyLine, referenceLines, safeHref, shortLink, shortUrl } from './links.js';
+import { describeActivity, formatValue, itemChangeText, reviewStep } from './history.js';
 
 describe('fields', () => {
   it('joins words naturally', () => {
@@ -11,7 +11,7 @@ describe('fields', () => {
     expect(joinWords(['Notes', 'Reference'])).toBe('Notes and Reference');
     expect(joinWords(['Brief', 'Notes', 'Reference'])).toBe('Brief, Notes and Reference');
   });
-  it('names the missing fields in the Instagram lock hint', () => {
+  it('names the missing fields in the Links lock hint', () => {
     expect(lockHint(['notes', 'reference'])).toBe('Fill in Notes and Reference first');
     expect(lockHint(['publish_date'])).toBe('Fill in Publish date first');
   });
@@ -68,11 +68,19 @@ describe('links', () => {
   it('never turns a javascript: URL into a link', () => {
     expect(linkifyLine('javascript:alert(1)')).toEqual([{ type: 'text', value: 'javascript:alert(1)' }]);
   });
-  it('recognises Instagram links like the database does', () => {
-    expect(isInstagramUrl('https://www.instagram.com/p/C1abc/')).toBe(true);
-    expect(isInstagramUrl('https://instagram.com/reel/xyz')).toBe(true);
-    expect(isInstagramUrl('https://tiktok.com/@x')).toBe(false);
+  it('checks links like the database does: any website, http(s) only, no spaces (v4)', () => {
+    expect(isWebLink('https://www.instagram.com/p/C1abc/')).toBe(true);
+    expect(isWebLink('http://tiktok.com/@x/video/1')).toBe(true);
+    expect(isWebLink('drive.google.com/file/d/1')).toBe(false);
+    expect(isWebLink('https://a.com/with space')).toBe(false);
+    expect(isWebLink('javascript:alert(1)')).toBe(false);
+    expect(cleanLinks([' https://a.com ', '', 'https://a.com', null, 'https://b.com'])).toEqual(['https://a.com', 'https://b.com']);
     expect(shortUrl('https://www.instagram.com/p/C1abc/')).toBe('instagram.com/p/C1abc');
+  });
+  it('shortens a link to its domain and the start of its path', () => {
+    expect(shortLink('https://www.instagram.com/p/C1abc/')).toBe('instagram.com/p/C1abc');
+    expect(shortLink('https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing')).toBe('drive.google.com/file/d/1AbCdEf…');
+    expect(shortLink('https://youtu.be/xyz?t=3')).toBe('youtu.be/xyz');
   });
 });
 
@@ -90,8 +98,40 @@ describe('history', () => {
       },
       ctx,
     );
+    // old (v3) history rows keep their wording
     expect(`${d.actor} ${d.text}`).toBe('Dika added the Instagram link · status → Uploaded');
-    expect(d.details[0]).toEqual({ field: 'instagram_url', label: 'Instagram link', old: '—', new: 'https://www.instagram.com/p/abc/' });
+    expect(d.details[0]).toMatchObject({ field: 'instagram_url', label: 'Instagram link', old: '—', new: 'https://www.instagram.com/p/abc/' });
+  });
+  it('phrases the v4 review steps from their transitions', () => {
+    const added = itemChangeText({ links: { old: [], new: ['https://drive.google.com/x'] }, review_state: { old: null, new: 'done' }, status: { old: 'planned', new: 'done' } });
+    expect(added.text).toBe('added links · status → Done');
+    const posted = itemChangeText({
+      links: { old: [], new: ['https://instagram.com/p/1'] },
+      self_posted: { old: false, new: true },
+      review_state: { old: null, new: 'done' },
+      status: { old: 'planned', new: 'uploaded' },
+    });
+    expect(posted.text).toBe('added links and posted it themselves · status → Uploaded');
+    const asked = itemChangeText({ review_state: { old: 'done', new: 'revision' }, revision_note: { old: null, new: 'Cut the first 3 seconds' }, status: { old: 'done', new: 'revision' } });
+    expect(asked).toMatchObject({ text: 'requested a revision', quote: 'Cut the first 3 seconds', step: 'revision' });
+    expect(describeActivity({ action: 'item_updated', actor_name: 'Admin Beyondcy', changes: { review_state: { old: 'done', new: 'revision' }, revision_note: { old: null, new: 'Cut it' } } }).text).toBe('requested a revision:');
+    expect(itemChangeText({ review_state: { old: 'revision', new: 'done' }, status: { old: 'revision', new: 'done' } }).text).toBe('marked as Done');
+    expect(itemChangeText({ review_state: { old: 'done', new: 'approved' }, status: { old: 'done', new: 'uploaded' } }).text).toBe('marked as Uploaded');
+    expect(itemChangeText({ review_state: { old: 'approved', new: 'done' }, status: { old: 'uploaded', new: 'done' } }).text).toBe('moved it back to Done');
+  });
+  it("doesn't call a migrated row's first edit a review step", () => {
+    // rows migrated in v4 have links, self_posted true and review_state NULL: their first edit logs null → done
+    const d = itemChangeText({ caption: { old: 'a', new: 'b' }, review_state: { old: null, new: 'done' } });
+    expect(d.text).toBe('changed Caption');
+    expect(d.step).toBeNull();
+    expect(d.details.map((x) => x.field)).toEqual(['caption']);
+    expect(reviewStep({ review_state: { old: null, new: 'done' } })).toBeNull();
+  });
+  it('phrases Notes pictures', () => {
+    expect(itemChangeText({ note_images: { old: [], new: ['r/i/1.png'] } }).text).toBe('added a picture to Notes');
+    expect(itemChangeText({ note_images: { old: ['a', 'b'], new: ['a'] } }).text).toBe('removed a picture from Notes');
+    expect(formatValue('note_images', ['a', 'b'])).toBe('2 pictures');
+    expect(formatValue('links', ['https://www.instagram.com/p/x/', 'https://youtu.be/y'])).toBe('instagram.com/p/x · youtu.be/y');
   });
   it('describes field changes', () => {
     const d = describeActivity({ action: 'item_updated', actor_name: 'Admin Beyondcy', changes: { caption: { old: 'Promo lama', new: 'Promo baru' } } });
@@ -110,7 +150,7 @@ describe('history', () => {
     );
     const d = describeActivity({ action: 'item_updated', actor_name: 'Admin Beyondcy', changes: { pic_id: { old: 'u-gone', new: 'u-anne' } } }, names);
     expect(d.text).toBe('changed the PIC to Anne');
-    expect(d.details[0]).toEqual({ field: 'pic_id', label: 'PIC', old: 'Former member', new: 'Anne' });
+    expect(d.details[0]).toMatchObject({ field: 'pic_id', label: 'PIC', old: 'Former member', new: 'Anne' });
   });
   it('maps storage and target errors', () => {
     expect(friendlyError({ message: 'The object exceeded the maximum allowed size', statusCode: '413' })).toBe('Banner must be 5 MB or smaller.');

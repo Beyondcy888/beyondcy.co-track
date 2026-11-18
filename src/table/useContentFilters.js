@@ -1,5 +1,7 @@
 // The content table's filters, held by the page so the status board below the calendar
 // shows exactly the same items as the table (update v3, 05 §4: "same month scope, same filters").
+// The scope is always the selected month plus items with no date ("Show all months" was
+// removed in update v4, 02 §4).
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { isInMonth } from '../lib/time.js';
@@ -16,7 +18,6 @@ export function useContentFilters({ items, month, view }) {
   const [status, setStatus] = useState('');
   const [type, setType] = useState('');
   const [pic, setPic] = useState(''); // '' every PIC · NO_PIC needs a PIC · a person's id
-  const [allMonths, setAllMonths] = useState(false);
 
   const brandParam = searchParams.get('brand') ?? '';
   // only where the page has a Brand filter, and only one of its brands
@@ -36,10 +37,7 @@ export function useContentFilters({ items, month, view }) {
     [setSearchParams],
   );
 
-  const scoped = useMemo(
-    () => (allMonths ? items : items.filter((i) => !i.publish_date || isInMonth(i.publish_date, month))),
-    [items, allMonths, month],
-  );
+  const scoped = useMemo(() => items.filter((i) => !i.publish_date || isInMonth(i.publish_date, month)), [items, month]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
@@ -67,7 +65,6 @@ export function useContentFilters({ items, month, view }) {
     type, setType,
     brand, setBrand,
     pic, setPic,
-    allMonths, setAllMonths,
     filtered,
     on: Boolean(query || status || type || brand || pic),
     clear,

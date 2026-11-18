@@ -1,0 +1,293 @@
+/* Page skeletons (update v4, file 11; components in components/skeleton/PageSkeletons.jsx).
+   The outer boxes reuse the real layout classes; these rules only shape the placeholders. */
+
+.sk-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 172px;
+  padding: 16px 20px;
+  border-radius: var(--r-panel);
+  background: linear-gradient(155deg, #201f27 0%, #18171d 70%, #16151b 100%);
+}
+
+.sk-box .sk {
+  background: var(--raised-hi);
+}
+
+.sk-box-num {
+  margin: 6px 0 4px;
+}
+
+.sk-headline {
+  display: grid;
+  gap: 12px;
+}
+
+.sk-legend {
+  display: grid;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.sk-reminder {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-panel);
+}
+
+.sk-wr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sk-lanes {
+  display: grid;
+  gap: 16px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.sk-lane {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.sk-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sk-table-wrap {
+  overflow: hidden;
+}
+
+.sk-tr {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-th {
+  height: 42px;
+  align-items: center;
+}
+
+.sk-td {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
+.sk-th .sk-td {
+  min-height: 42px;
+}
+
+.sk-cal-cell {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 10px 8px 8px;
+}
+
+.sk-cal-num {
+  margin-bottom: 8px;
+}
+
+.sk-nodate {
+  display: grid;
+  gap: 10px;
+}
+
+.sk-bcol-head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 4px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-card {
+  margin-bottom: 8px;
+}
+
+.sk-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 22px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-brand-cards {
+  overflow: hidden;
+}
+
+.sk-brand-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 1 / 1.06;
+  min-height: 166px;
+  padding: 14px;
+  border-radius: var(--r-panel);
+  background: linear-gradient(160deg, #1e1d25 0%, #17161c 62%, #151419 100%);
+}
+
+.sk-brand-card .sk {
+  background: var(--raised-hi);
+}
+
+.sk-dash-table {
+  padding: 4px 0;
+}
+
+.sk-dash-row {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(6, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-dash-row.is-head {
+  min-height: 40px;
+}
+
+.sk-dash-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sk-list {
+  padding: 8px 2px;
+}
+
+.sk-targets {
+  display: grid;
+  gap: 26px;
+}
+
+.sk-tg-group {
+  display: grid;
+  gap: 12px;
+}
+
+.sk-tg-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.sk-thread {
+  padding: 6px 0;
+}
+
+.sk-drawer {
+  display: grid;
+  gap: 14px;
+  padding: 22px 24px;
+}
+
+.sk-drawer-tabs {
+  display: flex;
+  gap: 22px;
+  padding: 6px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sk-field {
+  display: grid;
+  gap: 8px;
+}
+
+.sk-auth .sk-shapes {
+  display: grid;
+  gap: 14px;
+}
+
+/* the app shell before the person and the setup data are known */
+.sk-app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--panel);
+}
+
+.sk-app-side {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 22px 18px;
+}
+
+.sk-app-nav {
+  display: grid;
+  gap: 18px;
+}
+
+.sk-app-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.sk-app-main {
+  display: grid;
+  align-content: start;
+  gap: 26px;
+  margin: 8px;
+  padding: 20px var(--pad-x);
+  border: 1px solid var(--line);
+  border-radius: var(--r-shell);
+  background: var(--ink);
+}
+
+.sk-app-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .sk-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sk-app-side {
+    display: none;
+  }
+
+  .sk-boxes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .sk-boxes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sk-legend,
+  .sk-ring {
+    display: none;
+  }
+
+  .sk-tg-row > :nth-child(n + 4) {
+    display: none;
+  }
+}

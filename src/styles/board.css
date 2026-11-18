@@ -1,4 +1,4 @@
-/* The status board (update v3, 05 §4): three columns, display only. */
+/* The status board (update v3, 05 §4; five columns since v4, file 01), display only. */
 
 .board-section {
   margin: 48px 0 24px;
@@ -14,7 +14,7 @@
 
 .board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: start;
   gap: 16px;
 }
@@ -39,6 +39,16 @@
 .bcol--uploaded {
   --hue: var(--status-uploaded);
   --hue-light: var(--status-uploaded-light);
+}
+
+.bcol--done {
+  --hue: var(--status-done);
+  --hue-light: var(--status-done-light);
+}
+
+.bcol--revision {
+  --hue: var(--status-revision);
+  --hue-light: var(--status-revision-light);
 }
 
 /* header: marker + name, the big total, the Reels / Feed split below it */
@@ -319,9 +329,9 @@
 }
 
 /* ------------------------------------------------------------ narrower screens: the columns scroll sideways */
-@media (max-width: 980px) {
+@media (max-width: 1500px) {
   .board {
-    grid-template-columns: repeat(3, minmax(268px, 1fr));
+    grid-template-columns: repeat(5, minmax(256px, 1fr));
     margin: 0 calc(var(--pad-x) * -1);
     padding: 0 var(--pad-x) 10px;
     overflow-x: auto;

@@ -21,13 +21,15 @@ import { useBanner } from '../banner/useBanner.js';
 import { Avatar } from '../people/Avatar.jsx';
 import { useProjects } from '../projects/ProjectsProvider.jsx';
 import { Popover } from '../ui/Popover.jsx';
-import { Spinner } from '../ui/bits.jsx';
 import { useToast } from '../ui/Toast.jsx';
+import { FadeIn } from '../components/skeleton/Skeleton.jsx';
+import { TrackerPageSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { pageStats, targetsForMonth } from '../lib/progress.js';
 import { monthName } from '../lib/time.js';
 import { weekRange } from '../lib/week.js';
 import { buildView } from './view.js';
+import { useSavedView, ViewTabs } from './ViewTabs.jsx';
 
 /**
  * /t/:roleId — the convenience lock. RLS is the real one: if this check were
@@ -143,6 +145,8 @@ function BrandPicPicker({ anchor, brands, members, targets, month, onPick, onClo
  * lanes · content table · calendar (drag to change a date) · status board; and the drawer.
  * Every section uses the same items as the page (My work = mine, Master = the tracker,
  * a brand page = that brand).
+ * Update v4: staff see one of table / calendar / status board at a time (view tabs, file 03;
+ * Admin keeps all three stacked), and the banner is the person's own (file 04).
  */
 export function TrackerView({ kind }) {
   const { brandId } = useParams();
@@ -152,7 +156,6 @@ export function TrackerView({ kind }) {
   const { month, setMonth } = useMonth();
   const today = useToday();
   const currentMonth = useCurrentMonth();
-  const banner = useBanner();
   const moves = useCalendarMoves();
   const [searchParams, setSearchParams] = useSearchParams();
   const [picker, setPicker] = useState(null); // { anchor, publishDate }
@@ -172,6 +175,19 @@ export function TrackerView({ kind }) {
   const members = useMemo(() => membersOf(roleId), [membersOf, roleId]);
   // Admin must choose a PIC where the tracker has several people (Behomy); elsewhere the database decides
   const adminPicksPic = t.isAdmin && members.length > 1;
+
+  // whose banner: staff see their own; Admin sees the person's on a one-person tracker, none on Behomy
+  const bannerOwner = t.isAdmin ? (members.length === 1 ? members[0].id : null) : t.me;
+  const banner = useBanner({
+    profileId: bannerOwner,
+    me: t.me,
+    isAdmin: t.isAdmin,
+    ownerName: bannerOwner ? t.peopleById[bannerOwner]?.display_name ?? null : null,
+  });
+
+  // staff: one view at a time, remembered per person and page; Admin: everything stacked
+  const stacked = t.isAdmin;
+  const [savedView, setSavedView] = useSavedView({ roleId, page: view.key ?? kind, personId: t.me });
 
   // the boxes and the progress module read the same numbers (05 §1)
   const stats = useMemo(
@@ -205,11 +221,12 @@ export function TrackerView({ kind }) {
     );
   }, [setSearchParams]);
 
-  /** From the reminder: show the current month, scroll to the calendar, flash this week. */
+  /** From the reminder: show the current month, open the calendar (staff), scroll to it, flash this week. */
   const showWeek = useCallback(() => {
     if (month !== currentMonth) setMonth(currentMonth);
+    if (!stacked) setSavedView('calendar');
     setFlashWeek({ start: weekRange(today).start, key: Date.now() });
-  }, [month, currentMonth, setMonth, today]);
+  }, [month, currentMonth, setMonth, today, stacked, setSavedView]);
 
   const create = async (brand, publishDate, picId = null) => {
     setPicker(null);
@@ -233,7 +250,38 @@ export function TrackerView({ kind }) {
 
   if (view.redirect) return <Navigate to={view.redirect} replace />;
 
-  const scopeText = filters.allMonths ? 'All months' : `${monthName(month)}, plus items with no date`;
+  const scopeText = `${monthName(month)}, plus items with no date`;
+  const tableEl = <ContentTable view={view} items={items} filters={filters} onOpen={openItem} onCreate={startCreate} openId={openId} />;
+  const calendarEl = (
+    <MonthCalendar
+      items={items}
+      projects={projects}
+      onOpen={openItem}
+      onOpenProject={ps.openProject}
+      onCreate={startCreate}
+      showPic={view.showPic}
+      drag={moves}
+      flashWeek={flashWeek}
+    />
+  );
+  const boardEl = (
+    <StatusBoard
+      view={view}
+      items={filters.filtered}
+      onOpen={openItem}
+      filtersOn={filters.on}
+      onClearFilters={filters.clear}
+      scopeText={scopeText}
+      progress={!filters.on && stats?.target ? { uploaded: stats.uploaded.total, target: stats.target.total } : null}
+    />
+  );
+  const tabBase = `v-${view.key}`;
+  const panel = (key, el) => (
+    // every view stays mounted (instant switching, sorting and scroll kept); only one is shown
+    <div key={key} className="view-panel" role="tabpanel" id={`${tabBase}-panel-${key}`} aria-labelledby={`${tabBase}-tab-${key}`} hidden={savedView !== key}>
+      {el}
+    </div>
+  );
 
   return (
     <div className="tracker-page">
@@ -245,11 +293,7 @@ export function TrackerView({ kind }) {
         top={t.status === 'ready' ? <TrackerBanner ctl={banner} /> : null}
       />
 
-      {t.status === 'loading' && (
-        <div className="loading-block">
-          <Spinner label="Loading the tracker" /> Loading the tracker
-        </div>
-      )}
+      {t.status === 'loading' && <TrackerPageSkeleton month={month} stacked={stacked} />}
 
       {t.status === 'error' && (
         <div className="notice notice-danger" role="alert">
@@ -263,7 +307,7 @@ export function TrackerView({ kind }) {
       )}
 
       {t.status === 'ready' && (
-        <>
+        <FadeIn>
           <SummaryBoxes
             stats={stats}
             month={month}
@@ -277,27 +321,21 @@ export function TrackerView({ kind }) {
             items={items}
             aside={<WeekReminder view={view} items={items} projects={projects} onOpen={openItem} onOpenProject={ps.openProject} onShowWeek={showWeek} />}
           />
-          <ContentTable view={view} items={items} filters={filters} onOpen={openItem} onCreate={startCreate} openId={openId} />
-          <MonthCalendar
-            items={items}
-            projects={projects}
-            onOpen={openItem}
-            onOpenProject={ps.openProject}
-            onCreate={startCreate}
-            showPic={view.showPic}
-            drag={moves}
-            flashWeek={flashWeek}
-          />
-          <StatusBoard
-            view={view}
-            items={filters.filtered}
-            onOpen={openItem}
-            filtersOn={filters.on}
-            onClearFilters={filters.clear}
-            scopeText={scopeText}
-            progress={!filters.on && !filters.allMonths && stats?.target ? { uploaded: stats.uploaded.total, target: stats.target.total } : null}
-          />
-        </>
+          {stacked ? (
+            <>
+              {tableEl}
+              {calendarEl}
+              {boardEl}
+            </>
+          ) : (
+            <div className="views">
+              <ViewTabs value={savedView} onChange={setSavedView} idBase={tabBase} />
+              {panel('table', tableEl)}
+              {panel('calendar', calendarEl)}
+              {panel('board', boardEl)}
+            </div>
+          )}
+        </FadeIn>
       )}
 
       {picker &&

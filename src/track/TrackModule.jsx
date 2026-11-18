@@ -73,6 +73,18 @@ function Legend({ stats }) {
           </li>
         );
       })}
+      {stats.done > 0 && (
+        <li title="Done: links added, waiting for Admin's review" className="lg-review-item">
+          <span className="lg lg-d" aria-hidden="true" />
+          Waiting for review <b className="mono">{stats.done}</b>
+        </li>
+      )}
+      {stats.revision > 0 && (
+        <li title="Admin asked for changes">
+          <span className="lg lg-r" aria-hidden="true" />
+          Revision <b className="mono">{stats.revision}</b>
+        </li>
+      )}
       <li title="Ready, not posted yet">
         <span className="lg lg-p" aria-hidden="true" />
         Planned <b className="mono">{stats.planned}</b>
@@ -222,6 +234,8 @@ export function TrackModule({ view, items, aside = null }) {
               size="lg"
               target={lanes[0].target.total}
               uploaded={lanes[0].uploaded.total}
+              review={lanes[0].done}
+              revision={lanes[0].revision}
               planned={lanes[0].planned}
               pace={lanes[0].pace}
               label={trackAriaLabel({ ...lanes[0], uploaded: lanes[0].uploaded.total, target: lanes[0].target.total })}
@@ -246,6 +260,8 @@ export function TrackModule({ view, items, aside = null }) {
                     size="sm"
                     target={lane.target.total}
                     uploaded={lane.uploaded.total}
+                    review={lane.done}
+                    revision={lane.revision}
                     planned={lane.planned}
                     pace={lane.pace}
                     label={`${lane.label}: ${trackAriaLabel({ ...lane, uploaded: lane.uploaded.total, target: lane.target.total })}`}

@@ -84,12 +84,24 @@ export default function DevCheck() {
       add('Admin: roles → 5 rows', r.data?.length === 5, r.error?.message ?? `${r.data?.length} rows`);
       add('Admin: brands → 9 rows', b.data?.length === 9, b.error?.message ?? `${b.data?.length} rows`);
       add('Admin: brand_pillars → 5 rows', p.data?.length === 5, p.error?.message ?? `${p.data?.length} rows`);
-      const [ct, tb] = await Promise.all([
+      const [ct, ub] = await Promise.all([
         supabase.from('content_targets').select('id', { count: 'exact', head: true }),
-        supabase.from('tracker_banners').select('role_id'),
+        supabase.from('user_banners').select('profile_id'),
       ]);
       add('Admin: content_targets readable (v2)', !ct.error, ct.error?.message ?? `${ct.count ?? 0} rows`);
-      add('Admin: tracker_banners readable (v2)', !tb.error, tb.error?.message ?? `${tb.data?.length ?? 0} banners`);
+      add('Admin: user_banners readable (v4)', !ub.error, ub.error?.message ?? `${ub.data?.length ?? 0} banners`);
+      const log = await supabase.rpc('search_activity', { p_limit: 5 });
+      add('Admin: search_activity answers (v4)', !log.error, log.error?.message ?? `${log.data?.length ?? 0} recent entries`);
+      const ex = await supabase.rpc('is_maintenance_exempt');
+      add('v4: is_maintenance_exempt', !ex.error, ex.error?.message ?? (ex.data ? 'true: this is the Admin Beyondcy account' : 'false: locked out during maintenance'));
+    }
+
+    // v4: everyone (even signed out) reads the maintenance switch
+    const m = await supabase.from('site_maintenance').select('site, is_on, ends_at');
+    add('v4: site_maintenance readable → 2 rows', m.data?.length === 2, m.error?.message ?? m.data?.map((r) => `${r.site} ${r.is_on ? 'ON' : 'off'}`).join(', '));
+    if (session) {
+      const items = await supabase.from('content_items').select('id, links, self_posted, review_state, note_images').limit(1);
+      add('v4: content_items has links / review / note_images', !items.error, items.error?.message ?? 'columns present');
     }
 
     if (profile?.role_id === 'beefix') {
@@ -117,10 +129,10 @@ export default function DevCheck() {
         .select();
       add('Dika: setting a target is refused (Admin only, v2)', Boolean(tgt.error), tgt.error ? tgt.error.message : 'NOT refused');
       if (tgt.data?.[0]) await supabase.from('content_targets').delete().eq('id', tgt.data[0].id);
-      const ban = await supabase.from('tracker_banners').select('role_id').eq('role_id', 'behomy');
-      add("Dika: can't read Behomy's banner row (v2)", !ban.error && ban.data?.length === 0, ban.error?.message ?? `${ban.data?.length} rows`);
-      const files = await supabase.storage.from('tracker-banners').list('behomy');
-      add("Dika: can't list Behomy's banner files (v2)", Boolean(files.error) || files.data?.length === 0, files.error?.message ?? `${files.data?.length} files`);
+      const notes = await supabase.storage.from('note-images').list('behomy');
+      add("Dika: can't list Behomy's Notes pictures (v4)", Boolean(notes.error) || notes.data?.length === 0, notes.error?.message ?? `${notes.data?.length} files`);
+      const rev = await supabase.rpc('start_maintenance', { p_site: 'tracker', p_minutes: 30 });
+      add('Dika: turning on maintenance is refused (v4)', Boolean(rev.error), rev.error ? rev.error.message : 'NOT refused: end it on the Maintenance page now');
     }
 
     setRunning(false);

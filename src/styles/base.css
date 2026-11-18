@@ -404,6 +404,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: 5px;
 }
 
+/* v4: Done (amber, half-filled: almost there) and Revision (dark blue ring with a dot) */
+.pill-done {
+  --hue: var(--status-done);
+  --hue-light: var(--status-done-light);
+}
+
+.pill-done::before {
+  background: linear-gradient(90deg, var(--hue) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1.5px var(--hue);
+}
+
+.pill-revision {
+  --hue: var(--status-revision);
+  --hue-light: var(--status-revision-light);
+  background: color-mix(in srgb, var(--status-revision) 30%, transparent);
+}
+
+.pill-revision::before {
+  background: var(--status-revision-light);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-revision) 90%, transparent);
+  width: 4px;
+  height: 4px;
+  margin: 0 1px;
+}
+
 /* status marker used in chips (shape + colour, so colour is never the only signal) */
 .mark {
   flex: none;
@@ -426,6 +451,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: 5px;
   margin: 1px;
   background: var(--status-not-started);
+}
+
+/* v4: shapes differ too, so colour is never the only signal */
+.mark-done {
+  background: linear-gradient(90deg, var(--status-done) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 1.5px var(--status-done);
+}
+
+.mark-revision {
+  background: var(--status-revision-light);
+  box-shadow: inset 0 0 0 2px var(--status-revision);
 }
 
 /* ------------------------------------------------------------ misc */

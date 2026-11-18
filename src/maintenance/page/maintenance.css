@@ -1,0 +1,1906 @@
+/*
+ * Beyondcy maintenance page styles. Pairs with maintenance.js; shared by the Tracker and the
+ * Dashboard, so keep both copies byte-identical. Every selector is scoped under .bym.
+ *
+ * The scene runs one 13.5 s loop. Every scene animation uses that duration, with keyframe
+ * percentages for the phases (1 s = 7.407%):
+ *   0 - 6 s      work: hands type, a glowing gear spins above the monitor
+ *   6 - 11.5 s   the server wakes: lights up inside, its one big eye opens, blinks, looks around
+ *   11.5 - 13.5 s  it powers down to faint line-art, and the loop starts again
+ * Only transform and opacity animate. All animations are declared inside
+ * (prefers-reduced-motion: no-preference); with reduced motion the resting styles below show a
+ * still phase-1 scene. The long keyframe lists (typing, steam, cursor, live dot) are written
+ * out as stops inside the same 13.5 s loop.
+ */
+
+@font-face {
+  font-family: "bym-serif-fallback";
+  src: local("Georgia Bold"), local("Georgia-Bold"), local("Noto Serif Bold"), local("NotoSerif-Bold"),
+    local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* ------------------------------------------------------------------ root */
+.bym {
+  --bym-text: #eeecf4;
+  --bym-dim: #9a96ab;
+  --bym-line: #2f2e39;
+  --bym-card: #1b1a21;
+  --bym-green: #9ecd59;
+  --bym-serif: "DM Serif Display", "bym-serif-fallback", Georgia, "Times New Roman", serif;
+  --bym-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --bym-mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: #131218;
+  color: var(--bym-text);
+  font-family: var(--bym-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.bym *,
+.bym *::before,
+.bym *::after {
+  box-sizing: border-box;
+}
+
+.bym [hidden] {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ background: fluid shapes */
+.bym-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bym-blob {
+  position: absolute;
+  display: block;
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+  filter: blur(36px);
+}
+
+/* a long purple-to-magenta wave across the top left */
+.bym-blob--a {
+  width: 62vmax;
+  height: 24vmax;
+  left: -16vmax;
+  top: -4vmax;
+  border-radius: 42% 58% 64% 36% / 56% 40% 60% 44%;
+  background: linear-gradient(100deg, #4b23d6, #8a35ee 55%, #c43bd6);
+  opacity: 0.6;
+  transform: translate(0, 0) rotate(-24deg) scale(1, 1);
+}
+
+/* magenta, bottom left */
+.bym-blob--b {
+  width: 36vmax;
+  height: 30vmax;
+  left: -12vmax;
+  bottom: -12vmax;
+  border-radius: 58% 42% 40% 60% / 46% 58% 42% 54%;
+  background: linear-gradient(200deg, #a42ce0, #ee3f9e);
+  opacity: 0.55;
+  transform: translate(0, 0) rotate(12deg) scale(1, 1);
+}
+
+/* a pink wave across the top right */
+.bym-blob--c {
+  width: 56vmax;
+  height: 22vmax;
+  right: -18vmax;
+  top: -2vmax;
+  border-radius: 60% 40% 38% 62% / 44% 58% 42% 56%;
+  background: linear-gradient(80deg, #ff7aa8, #e2368f 60%, #b42fd0);
+  opacity: 0.52;
+  transform: translate(0, 0) rotate(26deg) scale(1, 1);
+}
+
+/* soft orange, bottom right */
+.bym-blob--d {
+  width: 44vmax;
+  height: 30vmax;
+  right: -14vmax;
+  bottom: -12vmax;
+  border-radius: 54% 46% 42% 58% / 42% 56% 44% 58%;
+  background: linear-gradient(120deg, #ff6f8e, #ffa275 50%, #ffd29a);
+  opacity: 0.6;
+  transform: translate(0, 0) rotate(-14deg) scale(1, 1);
+}
+
+/* a low glow behind the card that leaks out around its edges */
+.bym-blob--e {
+  width: 52vmax;
+  height: 38vmax;
+  left: 50%;
+  top: 50%;
+  margin: -19vmax 0 0 -26vmax;
+  border-radius: 50% 50% 46% 54% / 56% 48% 52% 44%;
+  background: linear-gradient(100deg, #6c3cf0, #d23aa8 55%, #ff8a5c);
+  opacity: 0.24;
+  transform: translate(0, 0) rotate(0deg) scale(1, 1);
+}
+
+/* two small drifting drops */
+.bym-blob--f {
+  width: 16vmax;
+  height: 13vmax;
+  left: 6vmax;
+  top: 52%;
+  background: linear-gradient(140deg, #ff6fae, #ffad7c);
+  opacity: 0.46;
+  transform: translate(0, 0) rotate(0deg) scale(1, 1);
+}
+
+.bym-blob--g {
+  width: 15vmax;
+  height: 12vmax;
+  right: 7vmax;
+  top: 34%;
+  border-radius: 58% 42% 52% 48% / 44% 56% 44% 56%;
+  background: linear-gradient(160deg, #7b3ff2, #e2409e);
+  opacity: 0.4;
+  transform: translate(0, 0) rotate(0deg) scale(1, 1);
+}
+
+/* ------------------------------------------------------------------ layout */
+.bym-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.bym-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 34px;
+  padding: 0 6px;
+}
+
+.bym-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.bym .bym-logo {
+  display: block;
+  width: auto;
+  height: 24px;
+  max-width: none;
+  margin: 0;
+  border: 0;
+}
+
+.bym .bym-signin {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--bym-line);
+  border-radius: 999px;
+  background: rgba(27, 26, 33, 0.8);
+  color: #b4b0c4;
+  font-family: var(--bym-sans);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.bym .bym-signin:hover {
+  border-color: #4a4858;
+  background: #25242d;
+  color: var(--bym-text);
+}
+
+.bym .bym-signin:focus-visible {
+  outline: 2px solid var(--bym-green);
+  outline-offset: 3px;
+}
+
+.bym-card {
+  position: relative;
+  margin: 0;
+  padding: 22px 22px 34px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 32px;
+  background: var(--bym-card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 40px 100px -30px rgba(0, 0, 0, 0.75);
+  text-align: center;
+}
+
+.bym-art {
+  width: 100%;
+  max-width: 65.7vh; /* 46vh tall at the scene's 600:420 ratio, so short laptop screens still fit */
+  margin: 0 auto;
+}
+
+.bym .bym-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 600 / 420;
+  overflow: visible;
+}
+
+.bym-copy {
+  padding: 0 8px;
+}
+
+.bym .bym-title {
+  max-width: none;
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--bym-text);
+  font-family: var(--bym-serif);
+  font-size: clamp(2.25rem, 1.6rem + 2.2vw, 3.25rem);
+  font-style: normal;
+  font-weight: 400; /* DM Serif Display is a single heavy weight */
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.bym .bym-text {
+  max-width: 36em;
+  margin: 12px auto 0;
+  text-wrap: balance;
+  padding: 0;
+  color: var(--bym-dim);
+  font-family: var(--bym-sans);
+  font-size: clamp(0.9375rem, 0.88rem + 0.3vw, 1.0625rem);
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.bym-site {
+  color: var(--bym-text);
+  font-weight: 500;
+}
+
+.bym-later {
+  display: block;
+}
+
+/* ------------------------------------------------------------------ countdown */
+.bym-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 0;
+}
+
+.bym .bym-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  padding: 9px 18px 9px 14px;
+  border: 1px solid var(--bym-line);
+  border-radius: 999px;
+  background: #222129;
+  color: var(--bym-text);
+  font-family: var(--bym-sans);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.bym-run-label {
+  color: var(--bym-dim);
+  font-weight: 500;
+}
+
+.bym-digits {
+  color: var(--bym-text);
+  font-family: var(--bym-mono);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.bym-state {
+  font-weight: 600;
+}
+
+.bym[data-state="back"] .bym-state {
+  color: var(--bym-green);
+}
+
+.bym-dot {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bym-green);
+}
+
+.bym[data-state="finishing"] .bym-dot,
+.bym[data-state="finishing"] .bym-dot-ping {
+  background: #ffb25c;
+}
+
+.bym-dot-ping {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bym-green);
+  opacity: 0;
+  transform: scale(2.8);
+}
+
+.bym .bym-sub {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  color: var(--bym-dim);
+  font-family: var(--bym-sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.bym-sub-time {
+  color: #c9c5d6;
+  font-family: var(--bym-mono);
+  font-size: 12px;
+}
+
+.bym .bym-sr {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  max-width: none;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ phones */
+@media (max-width: 560px) {
+  .bym-wrap {
+    gap: 14px;
+    padding: 20px 16px 28px;
+  }
+
+  .bym-top {
+    padding: 0 4px;
+  }
+
+  .bym .bym-logo {
+    height: 22px;
+  }
+
+  .bym-card {
+    padding: 12px 12px 26px;
+    border-radius: 26px;
+  }
+
+  .bym-copy {
+    padding: 0 6px;
+  }
+
+  .bym .bym-title {
+    margin-top: 8px;
+  }
+
+  .bym-later {
+    display: inline;
+  }
+
+  .bym-count {
+    margin-top: 20px;
+  }
+
+  .bym .bym-line {
+    font-size: 14px;
+  }
+
+  .bym-digits {
+    font-size: 16px;
+  }
+
+  .bym-blob {
+    filter: blur(30px);
+  }
+
+  .bym-blob--f,
+  .bym-blob--g {
+    display: none; /* behind the card on phones anyway */
+  }
+}
+
+/* ------------------------------------------------------------------ scene: resting state (= phase 1) */
+.bym-scene .bym-gear,
+.bym-scene .bym-gear-spin,
+.bym-scene .bym-srv-face,
+.bym-scene .bym-eye,
+.bym-scene .bym-blink,
+.bym-scene .bym-clock {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+.bym-scene .bym-head,
+.bym-scene .bym-alert {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.bym-scene .bym-srv-halo,
+.bym-scene .bym-srv-on,
+.bym-scene .bym-srv-face {
+  opacity: 0;
+}
+
+.bym-scene .bym-srv-face {
+  transform: scale(0.04, 0.04);
+}
+
+.bym-scene .bym-alert {
+  opacity: 0;
+  transform: scale(0.3);
+}
+
+.bym-scene .bym-eye {
+  transform: scaleY(0.06);
+}
+
+.bym-scene .bym-steam--a {
+  opacity: 0.58;
+  transform: translateY(-0.67px);
+}
+
+.bym-scene .bym-steam--b {
+  opacity: 0.02;
+  transform: translateY(-13.71px);
+}
+
+/* ------------------------------------------------------------------ motion */
+@media (prefers-reduced-motion: no-preference) {
+  .bym-blob--a {
+    animation: bym-blob-a 27s ease-in-out infinite;
+  }
+
+  .bym-blob--b {
+    animation: bym-blob-b 40.5s ease-in-out infinite;
+  }
+
+  .bym-blob--c {
+    animation: bym-blob-c 27s ease-in-out infinite;
+  }
+
+  .bym-blob--d {
+    animation: bym-blob-d 40.5s ease-in-out infinite;
+  }
+
+  .bym-blob--e {
+    animation: bym-blob-e 27s ease-in-out infinite;
+  }
+
+  .bym-blob--f {
+    animation: bym-blob-f 13.5s ease-in-out infinite;
+  }
+
+  .bym-blob--g {
+    animation: bym-blob-g 13.5s ease-in-out infinite;
+  }
+
+  .bym-blob {
+    will-change: transform;
+  }
+
+  .bym-scene .bym-gear {
+    animation: bym-gear 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-gear-spin {
+    animation: bym-gear-spin 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-hand--near {
+    animation: bym-hand-near 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-hand--far {
+    animation: bym-hand-far 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-code {
+    animation: bym-code 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-cursor {
+    animation: bym-cursor 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-steam--a {
+    animation: bym-steam-a 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-steam--b {
+    animation: bym-steam-b 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-head {
+    animation: bym-head 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-look {
+    animation: bym-look 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-blink {
+    animation: bym-blink 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-srv-halo {
+    animation: bym-srv-halo 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-srv-on {
+    animation: bym-srv-on 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-srv-face {
+    animation: bym-srv-face 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-eye {
+    animation: bym-eye 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-iris {
+    animation: bym-iris 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-clock {
+    animation: bym-clock 13.5s linear infinite;
+  }
+
+  .bym-scene .bym-alert {
+    animation: bym-alert 13.5s linear infinite;
+  }
+
+  .bym-dot-ping {
+    animation: bym-ping 13.5s linear infinite;
+  }
+}
+
+/* Paused while the tab is hidden (maintenance.js toggles the class). */
+.bym.bym--paused *,
+.bym.bym--paused *::before,
+.bym.bym--paused *::after {
+  animation-play-state: paused !important;
+}
+
+/* ------------------------------------------------------------------ keyframes: background */
+@keyframes bym-blob-a {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-24deg) scale(1, 1);
+  }
+  30% {
+    transform: translate(6%, 10%) rotate(-14deg) scale(1.08, 0.86);
+  }
+  65% {
+    transform: translate(10%, 2%) rotate(-30deg) scale(0.94, 1.14);
+  }
+}
+
+@keyframes bym-blob-b {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(12deg) scale(1, 1);
+  }
+  35% {
+    transform: translate(14%, -8%) rotate(-10deg) scale(1.1, 0.92);
+  }
+  70% {
+    transform: translate(6%, -16%) rotate(24deg) scale(0.92, 1.1);
+  }
+}
+
+@keyframes bym-blob-c {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(26deg) scale(1, 1);
+  }
+  40% {
+    transform: translate(-8%, 12%) rotate(14deg) scale(1.1, 0.88);
+  }
+  75% {
+    transform: translate(-12%, 4%) rotate(32deg) scale(0.92, 1.12);
+  }
+}
+
+@keyframes bym-blob-d {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(-14deg) scale(1, 1);
+  }
+  33% {
+    transform: translate(-10%, -10%) rotate(6deg) scale(1.08, 0.92);
+  }
+  66% {
+    transform: translate(-4%, -16%) rotate(-24deg) scale(0.94, 1.1);
+  }
+}
+
+@keyframes bym-blob-e {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  }
+  50% {
+    transform: translate(4%, -5%) rotate(10deg) scale(1.08, 0.94);
+  }
+}
+
+@keyframes bym-blob-f {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  }
+  50% {
+    transform: translate(30%, -40%) rotate(40deg) scale(1.2, 0.85);
+  }
+}
+
+@keyframes bym-blob-g {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1, 1);
+  }
+  50% {
+    transform: translate(-30%, 35%) rotate(-30deg) scale(0.85, 1.2);
+  }
+}
+
+/* ------------------------------------------------------------------ keyframes: scene (13.5 s) */
+@keyframes bym-gear {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  10.37% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  20.741% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  31.111% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  40.741% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+    animation-timing-function: ease-in;
+  }
+  45.926% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.72);
+  }
+  92.963% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.72);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bym-gear-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  45.926% {
+    transform: rotate(310deg);
+  }
+  92.963% {
+    transform: rotate(-47.5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bym-code {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: steps(6, end);
+  }
+  44% {
+    transform: translateY(-60px);
+  }
+  100% {
+    transform: translateY(-60px);
+  }
+}
+
+@keyframes bym-head {
+  0% {
+    transform: rotate(0deg);
+  }
+  55.926% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  58.889% {
+    transform: rotate(-3deg);
+  }
+  85.926% {
+    transform: rotate(-3deg);
+    animation-timing-function: ease-in-out;
+  }
+  89.63% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bym-look {
+  0% {
+    transform: translate(0, 0);
+  }
+  55.926% {
+    transform: translate(0, 0);
+    animation-timing-function: ease-out;
+  }
+  58.148% {
+    transform: translate(2.5px, -1.5px);
+  }
+  85.926% {
+    transform: translate(2.5px, -1.5px);
+    animation-timing-function: ease-in-out;
+  }
+  89.63% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes bym-blink {
+  0% {
+    transform: scaleY(1);
+  }
+  18.519% {
+    transform: scaleY(1);
+  }
+  18.963% {
+    transform: scaleY(0.15);
+  }
+  19.556% {
+    transform: scaleY(1);
+  }
+  59.259% {
+    transform: scaleY(1);
+  }
+  59.704% {
+    transform: scaleY(0.15);
+  }
+  60.296% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes bym-srv-halo {
+  0% {
+    opacity: 0;
+  }
+  45.926% {
+    opacity: 0;
+    animation-timing-function: ease-out;
+  }
+  51.852% {
+    opacity: 1;
+  }
+  87.037% {
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  93.333% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bym-srv-on {
+  0% {
+    opacity: 0;
+  }
+  44.444% {
+    opacity: 0;
+  }
+  44.815% {
+    opacity: 0.85;
+  }
+  45.333% {
+    opacity: 0.15;
+  }
+  45.926% {
+    opacity: 0.65;
+  }
+  46.444% {
+    opacity: 0.2;
+  }
+  47.556% {
+    opacity: 1;
+  }
+  86.815% {
+    opacity: 1;
+  }
+  87.852% {
+    opacity: 0.45;
+  }
+  88.444% {
+    opacity: 0.8;
+  }
+  89.63% {
+    opacity: 0.25;
+  }
+  93.333% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bym-srv-face {
+  0% {
+    opacity: 0;
+    transform: scale(0.04, 0.04);
+  }
+  47.778% {
+    opacity: 0;
+    transform: scale(0.04, 0.04);
+  }
+  48.148% {
+    opacity: 1;
+    transform: scale(0.04, 0.04);
+    animation-timing-function: ease-out;
+  }
+  49.333% {
+    opacity: 1;
+    transform: scale(1, 0.04);
+    animation-timing-function: ease-out;
+  }
+  50.815% {
+    opacity: 1;
+    transform: scale(1, 1);
+  }
+  86.074% {
+    opacity: 1;
+    transform: scale(1, 1);
+    animation-timing-function: ease-in;
+  }
+  87.259% {
+    opacity: 1;
+    transform: scale(1, 0.04);
+    animation-timing-function: ease-in;
+  }
+  88.296% {
+    opacity: 1;
+    transform: scale(0.04, 0.04);
+  }
+  88.889% {
+    opacity: 0;
+    transform: scale(0.04, 0.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.04, 0.04);
+  }
+}
+
+@keyframes bym-eye {
+  0% {
+    transform: scaleY(0.06);
+  }
+  51.481% {
+    transform: scaleY(0.06);
+    animation-timing-function: ease-out;
+  }
+  53.333% {
+    transform: scaleY(1.08);
+  }
+  54.222% {
+    transform: scaleY(1);
+  }
+  65.333% {
+    transform: scaleY(1);
+  }
+  65.926% {
+    transform: scaleY(0.06);
+  }
+  66.519% {
+    transform: scaleY(1);
+  }
+  74.444% {
+    transform: scaleY(1);
+  }
+  74.963% {
+    transform: scaleY(0.06);
+  }
+  75.481% {
+    transform: scaleY(1);
+  }
+  76.074% {
+    transform: scaleY(1);
+  }
+  76.593% {
+    transform: scaleY(0.06);
+  }
+  77.111% {
+    transform: scaleY(1);
+  }
+  85.185% {
+    transform: scaleY(1);
+  }
+  86.074% {
+    transform: scaleY(0.06);
+  }
+  100% {
+    transform: scaleY(0.06);
+  }
+}
+
+@keyframes bym-iris {
+  0% {
+    transform: translate(0, 0);
+  }
+  55.185% {
+    transform: translate(0, 0);
+    animation-timing-function: ease-in-out;
+  }
+  57.407% {
+    transform: translate(-9px, 3px);
+  }
+  64.815% {
+    transform: translate(-9px, 3px);
+    animation-timing-function: ease-in-out;
+  }
+  67.037% {
+    transform: translate(8px, -5px);
+  }
+  72.222% {
+    transform: translate(8px, -5px);
+    animation-timing-function: ease-in-out;
+  }
+  73.704% {
+    transform: translate(0, 0);
+  }
+  78.148% {
+    transform: translate(0, 0);
+    animation-timing-function: ease-in-out;
+  }
+  80% {
+    transform: translate(6px, 4px);
+  }
+  82.963% {
+    transform: translate(6px, 4px);
+    animation-timing-function: ease-in-out;
+  }
+  84.815% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes bym-clock {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bym-alert {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  57.185% {
+    opacity: 0;
+    transform: scale(0.3);
+    animation-timing-function: ease-out;
+  }
+  58.222% {
+    opacity: 1;
+    transform: scale(1.22);
+    animation-timing-function: ease-in-out;
+  }
+  59.259% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  67.778% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: ease-in;
+  }
+  69.63% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+@keyframes bym-hand-near {
+  0% {
+    transform: translate(0px, 0px);
+  }
+  0.296% {
+    transform: translate(-1.56px, -2.95px);
+  }
+  0.667% {
+    transform: translate(-1.56px, 0.7px);
+  }
+  1.037% {
+    transform: translate(-0.94px, 0px);
+  }
+  2.074% {
+    transform: translate(1.53px, -4.48px);
+  }
+  2.444% {
+    transform: translate(1.53px, 0.7px);
+  }
+  2.815% {
+    transform: translate(0.92px, 0px);
+  }
+  3.852% {
+    transform: translate(0.07px, -3.77px);
+  }
+  4.222% {
+    transform: translate(0.07px, 0.7px);
+  }
+  4.593% {
+    transform: translate(0.04px, 0px);
+  }
+  5.63% {
+    transform: translate(-0.11px, -3.38px);
+  }
+  6% {
+    transform: translate(-0.11px, 0.7px);
+  }
+  6.37% {
+    transform: translate(-0.06px, 0px);
+  }
+  7.407% {
+    transform: translate(0.17px, -4.55px);
+  }
+  7.778% {
+    transform: translate(0.17px, 0.7px);
+  }
+  8.148% {
+    transform: translate(0.1px, 0px);
+  }
+  9.185% {
+    transform: translate(-0.77px, -3.17px);
+  }
+  9.556% {
+    transform: translate(-0.77px, 0.7px);
+  }
+  9.926% {
+    transform: translate(-0.46px, 0px);
+  }
+  10.963% {
+    transform: translate(0.85px, -4.04px);
+  }
+  11.333% {
+    transform: translate(0.85px, 0.7px);
+  }
+  11.704% {
+    transform: translate(0.51px, 0px);
+  }
+  13.481% {
+    transform: translate(0px, -2px);
+  }
+  15.852% {
+    transform: translate(0px, -1.5px);
+  }
+  16.296% {
+    transform: translate(-0.97px, -3.68px);
+  }
+  16.667% {
+    transform: translate(-0.97px, 0.7px);
+  }
+  17.037% {
+    transform: translate(-0.58px, 0px);
+  }
+  18.074% {
+    transform: translate(-0.66px, -4.08px);
+  }
+  18.444% {
+    transform: translate(-0.66px, 0.7px);
+  }
+  18.815% {
+    transform: translate(-0.4px, 0px);
+  }
+  19.852% {
+    transform: translate(-0.65px, -5.15px);
+  }
+  20.222% {
+    transform: translate(-0.65px, 0.7px);
+  }
+  20.593% {
+    transform: translate(-0.39px, 0px);
+  }
+  21.63% {
+    transform: translate(-0.81px, -4.91px);
+  }
+  22% {
+    transform: translate(-0.81px, 0.7px);
+  }
+  22.37% {
+    transform: translate(-0.48px, 0px);
+  }
+  23.407% {
+    transform: translate(-0.99px, -3.14px);
+  }
+  23.778% {
+    transform: translate(-0.99px, 0.7px);
+  }
+  24.148% {
+    transform: translate(-0.59px, 0px);
+  }
+  25.185% {
+    transform: translate(-1.11px, -3.5px);
+  }
+  25.556% {
+    transform: translate(-1.11px, 0.7px);
+  }
+  25.926% {
+    transform: translate(-0.66px, 0px);
+  }
+  26.963% {
+    transform: translate(0.15px, -4.63px);
+  }
+  27.333% {
+    transform: translate(0.15px, 0.7px);
+  }
+  27.704% {
+    transform: translate(0.09px, 0px);
+  }
+  30.222% {
+    transform: translate(0px, -2px);
+  }
+  30.815% {
+    transform: translate(2.5px, -7px);
+  }
+  31.481% {
+    transform: translate(2.5px, 1px);
+  }
+  32% {
+    transform: translate(1.5px, 0px);
+  }
+  32.296% {
+    transform: translate(0px, -1.5px);
+  }
+  32.741% {
+    transform: translate(-1.36px, -4.99px);
+  }
+  33.111% {
+    transform: translate(-1.36px, 0.7px);
+  }
+  33.481% {
+    transform: translate(-0.82px, 0px);
+  }
+  34.519% {
+    transform: translate(0.17px, -4.29px);
+  }
+  34.889% {
+    transform: translate(0.17px, 0.7px);
+  }
+  35.259% {
+    transform: translate(0.1px, 0px);
+  }
+  36.296% {
+    transform: translate(0.58px, -5.12px);
+  }
+  36.667% {
+    transform: translate(0.58px, 0.7px);
+  }
+  37.037% {
+    transform: translate(0.35px, 0px);
+  }
+  38.074% {
+    transform: translate(0.4px, -5.01px);
+  }
+  38.444% {
+    transform: translate(0.4px, 0.7px);
+  }
+  38.815% {
+    transform: translate(0.24px, 0px);
+  }
+  39.852% {
+    transform: translate(1.05px, -2.9px);
+  }
+  40.222% {
+    transform: translate(1.05px, 0.7px);
+  }
+  40.593% {
+    transform: translate(0.63px, 0px);
+  }
+  41.63% {
+    transform: translate(-1.04px, -3.66px);
+  }
+  42% {
+    transform: translate(-1.04px, 0.7px);
+  }
+  42.37% {
+    transform: translate(-0.62px, 0px);
+  }
+  44% {
+    transform: translate(0px, 0px);
+  }
+  45.333% {
+    transform: translate(0px, 0px);
+  }
+  47.556% {
+    transform: translate(-1px, -3.5px);
+  }
+  87.407% {
+    transform: translate(-1px, -3.5px);
+  }
+  91.111% {
+    transform: translate(0px, 0px);
+  }
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+@keyframes bym-hand-far {
+  0% {
+    transform: translate(0px, 0px);
+  }
+  1.185% {
+    transform: translate(-1.3px, -2.96px);
+  }
+  1.556% {
+    transform: translate(-1.3px, 0.7px);
+  }
+  1.926% {
+    transform: translate(-0.78px, 0px);
+  }
+  2.963% {
+    transform: translate(0.42px, -3.53px);
+  }
+  3.333% {
+    transform: translate(0.42px, 0.7px);
+  }
+  3.704% {
+    transform: translate(0.25px, 0px);
+  }
+  4.741% {
+    transform: translate(-0.56px, -3.31px);
+  }
+  5.111% {
+    transform: translate(-0.56px, 0.7px);
+  }
+  5.481% {
+    transform: translate(-0.34px, 0px);
+  }
+  6.519% {
+    transform: translate(0.04px, -5.09px);
+  }
+  6.889% {
+    transform: translate(0.04px, 0.7px);
+  }
+  7.259% {
+    transform: translate(0.02px, 0px);
+  }
+  8.296% {
+    transform: translate(1.04px, -2.82px);
+  }
+  8.667% {
+    transform: translate(1.04px, 0.7px);
+  }
+  9.037% {
+    transform: translate(0.63px, 0px);
+  }
+  10.074% {
+    transform: translate(0.67px, -3.3px);
+  }
+  10.444% {
+    transform: translate(0.67px, 0.7px);
+  }
+  10.815% {
+    transform: translate(0.4px, 0px);
+  }
+  13.481% {
+    transform: translate(0px, -2px);
+  }
+  16.741% {
+    transform: translate(0px, -1.5px);
+  }
+  17.185% {
+    transform: translate(-1.32px, -5.17px);
+  }
+  17.556% {
+    transform: translate(-1.32px, 0.7px);
+  }
+  17.926% {
+    transform: translate(-0.79px, 0px);
+  }
+  18.963% {
+    transform: translate(1.09px, -3.93px);
+  }
+  19.333% {
+    transform: translate(1.09px, 0.7px);
+  }
+  19.704% {
+    transform: translate(0.65px, 0px);
+  }
+  20.741% {
+    transform: translate(0.77px, -2.93px);
+  }
+  21.111% {
+    transform: translate(0.77px, 0.7px);
+  }
+  21.481% {
+    transform: translate(0.46px, 0px);
+  }
+  22.519% {
+    transform: translate(-0.15px, -4.37px);
+  }
+  22.889% {
+    transform: translate(-0.15px, 0.7px);
+  }
+  23.259% {
+    transform: translate(-0.09px, 0px);
+  }
+  24.296% {
+    transform: translate(1.55px, -3.31px);
+  }
+  24.667% {
+    transform: translate(1.55px, 0.7px);
+  }
+  25.037% {
+    transform: translate(0.93px, 0px);
+  }
+  26.074% {
+    transform: translate(1.11px, -3.35px);
+  }
+  26.444% {
+    transform: translate(1.11px, 0.7px);
+  }
+  26.815% {
+    transform: translate(0.66px, 0px);
+  }
+  27.852% {
+    transform: translate(-0.99px, -4.68px);
+  }
+  28.222% {
+    transform: translate(-0.99px, 0.7px);
+  }
+  28.593% {
+    transform: translate(-0.59px, 0px);
+  }
+  30.222% {
+    transform: translate(0px, -2px);
+  }
+  33.185% {
+    transform: translate(0px, -1.5px);
+  }
+  33.63% {
+    transform: translate(-1.1px, -4.52px);
+  }
+  34% {
+    transform: translate(-1.1px, 0.7px);
+  }
+  34.37% {
+    transform: translate(-0.66px, 0px);
+  }
+  35.407% {
+    transform: translate(-0.41px, -4.02px);
+  }
+  35.778% {
+    transform: translate(-0.41px, 0.7px);
+  }
+  36.148% {
+    transform: translate(-0.25px, 0px);
+  }
+  37.185% {
+    transform: translate(1.43px, -4.64px);
+  }
+  37.556% {
+    transform: translate(1.43px, 0.7px);
+  }
+  37.926% {
+    transform: translate(0.86px, 0px);
+  }
+  38.963% {
+    transform: translate(1.26px, -4.99px);
+  }
+  39.333% {
+    transform: translate(1.26px, 0.7px);
+  }
+  39.704% {
+    transform: translate(0.76px, 0px);
+  }
+  40.741% {
+    transform: translate(0.47px, -4.75px);
+  }
+  41.111% {
+    transform: translate(0.47px, 0.7px);
+  }
+  41.481% {
+    transform: translate(0.28px, 0px);
+  }
+  44% {
+    transform: translate(0px, 0px);
+  }
+  45.333% {
+    transform: translate(0px, 0px);
+  }
+  47.556% {
+    transform: translate(-1px, -3.5px);
+  }
+  87.407% {
+    transform: translate(-1px, -3.5px);
+  }
+  91.111% {
+    transform: translate(0px, 0px);
+  }
+  100% {
+    transform: translate(0px, 0px);
+  }
+}
+
+@keyframes bym-steam-a {
+  0% {
+    opacity: 0.58;
+    transform: translateY(-0.67px);
+  }
+  1.481% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  17.037% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  25.852% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  25.926% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  34.815% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  50.37% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  59.185% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  59.259% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  68.148% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  83.704% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  92.519% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  92.593% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 0.58;
+    transform: translateY(-0.67px);
+  }
+}
+
+@keyframes bym-steam-b {
+  0% {
+    opacity: 0.02;
+    transform: translateY(-13.71px);
+  }
+  0.37% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  9.185% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  9.259% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  18.148% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  33.704% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  42.519% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  42.593% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  51.481% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  67.037% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  75.852% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  75.926% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  84.815% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 0.02;
+    transform: translateY(-13.71px);
+  }
+}
+
+@keyframes bym-cursor {
+  0% {
+    opacity: 1;
+  }
+  44.437% {
+    opacity: 1;
+  }
+  44.444% {
+    opacity: 0;
+  }
+  48.141% {
+    opacity: 0;
+  }
+  48.148% {
+    opacity: 1;
+  }
+  51.844% {
+    opacity: 1;
+  }
+  51.852% {
+    opacity: 0;
+  }
+  55.548% {
+    opacity: 0;
+  }
+  55.556% {
+    opacity: 1;
+  }
+  59.252% {
+    opacity: 1;
+  }
+  59.259% {
+    opacity: 0;
+  }
+  62.956% {
+    opacity: 0;
+  }
+  62.963% {
+    opacity: 1;
+  }
+  66.659% {
+    opacity: 1;
+  }
+  66.667% {
+    opacity: 0;
+  }
+  70.363% {
+    opacity: 0;
+  }
+  70.37% {
+    opacity: 1;
+  }
+  74.067% {
+    opacity: 1;
+  }
+  74.074% {
+    opacity: 0;
+  }
+  77.77% {
+    opacity: 0;
+  }
+  77.778% {
+    opacity: 1;
+  }
+  81.474% {
+    opacity: 1;
+  }
+  81.481% {
+    opacity: 0;
+  }
+  85.178% {
+    opacity: 0;
+  }
+  85.185% {
+    opacity: 1;
+  }
+  88.881% {
+    opacity: 1;
+  }
+  88.889% {
+    opacity: 0;
+  }
+  92.585% {
+    opacity: 0;
+  }
+  92.593% {
+    opacity: 1;
+  }
+  96.289% {
+    opacity: 1;
+  }
+  96.296% {
+    opacity: 0;
+  }
+  99.993% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes bym-ping {
+  0% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  1.407% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  1.481% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  1.778% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  9.63% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  12.519% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  12.593% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  12.889% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  20.741% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  23.63% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  23.704% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  24% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  31.852% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  34.741% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  34.815% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  35.111% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  42.963% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  45.852% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  45.926% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  46.222% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  54.074% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  56.963% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  57.037% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  57.333% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  65.185% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  68.074% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  68.148% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  68.444% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  76.296% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  79.185% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  79.259% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  79.556% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  87.407% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  90.296% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  90.37% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  90.667% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  98.519% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}

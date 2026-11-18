@@ -3,12 +3,13 @@ import { dotPlan } from '../lib/progress.js';
 import { pulseDot } from '../lib/motion.js';
 
 /**
- * One dot per unit of target: uploaded (filled green) → planned (blue ring) →
- * remaining (small dim dot); uploads past the target continue, after a gap, as green
- * "bonus" dots with a thin outer ring. A thin tick (in --text) marks where today's pace says you should be.
+ * One dot per unit of target: uploaded (filled green) → waiting for review (Done, amber) →
+ * in revision (dark-blue ring) → planned (blue ring) → remaining (small dim dot); uploads past
+ * the target continue, after a gap, as green "bonus" dots with a thin outer ring. A thin tick
+ * (in --text) marks where today's pace says you should be. Only uploads count toward the target.
  */
-export function Dots({ target, uploaded, planned, pace, label, size = 'lg', showPaceLabel = false }) {
-  const plan = dotPlan({ target, uploaded, planned });
+export function Dots({ target, uploaded, review = 0, revision = 0, planned, pace, label, size = 'lg', showPaceLabel = false }) {
+  const plan = dotPlan({ target, uploaded, review, revision, planned });
   const ref = useRef(null);
   const prevDone = useRef(null);
 
@@ -17,6 +18,8 @@ export function Dots({ target, uploaded, planned, pace, label, size = 'lg', show
   const cells = useMemo(() => {
     const list = [];
     for (let i = 0; i < plan.filled; i += 1) list.push('filled');
+    for (let i = 0; i < plan.review; i += 1) list.push('review');
+    for (let i = 0; i < plan.revision; i += 1) list.push('revision');
     for (let i = 0; i < plan.ring; i += 1) list.push('ring');
     for (let i = 0; i < plan.empty; i += 1) list.push('empty');
     if (plan.bonus) {
@@ -24,7 +27,7 @@ export function Dots({ target, uploaded, planned, pace, label, size = 'lg', show
       for (let i = 0; i < plan.bonus; i += 1) list.push('bonus');
     }
     return list;
-  }, [plan.filled, plan.ring, plan.empty, plan.bonus]);
+  }, [plan.filled, plan.review, plan.revision, plan.ring, plan.empty, plan.bonus]);
 
   // a dot that fills while the page is open pulses once
   useEffect(() => {

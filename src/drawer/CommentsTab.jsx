@@ -3,7 +3,8 @@ import { useTracker } from '../data/TrackerProvider.jsx';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { Avatar } from '../people/Avatar.jsx';
-import { RelativeTime, Spinner } from '../ui/bits.jsx';
+import { RelativeTime } from '../ui/bits.jsx';
+import { ThreadSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { IconTrash } from '../ui/icons.jsx';
 
 const MAX = 4000;
@@ -81,11 +82,7 @@ export function CommentsTab({ item }) {
           {loadError}
         </p>
       )}
-      {!list && !loadError && (
-        <div className="loading-block">
-          <Spinner label="Loading comments" /> Loading comments
-        </div>
-      )}
+      {!list && !loadError && <ThreadSkeleton label="Loading comments" />}
       {list && list.length === 0 && <p className="empty-line">No comments yet. Start the thread below.</p>}
       {list && list.length > 0 && (
         <ol className="thread">

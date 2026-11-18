@@ -1,7 +1,8 @@
 // The this-week reminder (update v3, 05 §2): sits to the right of the progress module.
 // It should read in two seconds: who it's for, how many are left, and which is next.
-//   - Monday–Sunday of the CURRENT week (WIB), whatever month the page is showing
-//   - only Not started and Planned content (never Uploaded), plus open projects due this week
+//   - Sunday–Saturday of the CURRENT week (WIB, v4 file 03), whatever month the page is showing
+//   - only unfinished content: Not started, Planned and Revision (tagged "Revision"); Done is
+//     with Admin and Uploaded is finished (v4 file 01). Plus open projects due this week
 //   - anything still open from before this week sits in a small Overdue group on top
 //     (Claude's default; remove the group if the owner prefers only this week)
 import { useMemo } from 'react';
@@ -90,6 +91,7 @@ function Row({ row, view, overdue = false, isNext = false, onOpen, onOpenProject
               {STATUS_LABELS[item.status]}
             </span>
             {brand && <span className="wr-brand truncate">{brand}</span>}
+            {item.status === 'revision' && <span className="wr-tag wr-tag--revision">Revision</span>}
             {row.today && <span className="wr-tag wr-tag--today">Today</span>}
             {row.late && <span className="wr-tag wr-tag--late">{overdue ? 'Overdue' : 'Late'}</span>}
           </span>
@@ -174,7 +176,11 @@ export function WeekReminder({ view, items, projects, onOpen, onOpenProject, onS
             <DoneMark />
             <p>
               <strong>All done for this week.</strong>
-              <span>Everything is uploaded{r.scheduled > 1 ? `: ${r.finished} of ${r.scheduled}` : ''}. Nice work.</span>
+              <span>
+                {r.inReview > 0
+                  ? `Nothing left for you: ${r.finished - r.inReview} uploaded, ${r.inReview} waiting for Admin's review.`
+                  : `Everything is uploaded${r.scheduled > 1 ? `: ${r.finished} of ${r.scheduled}` : ''}. Nice work.`}
+              </span>
             </p>
           </div>
         )}

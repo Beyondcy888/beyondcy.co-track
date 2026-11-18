@@ -8,6 +8,8 @@
 //   - achievement uses the totals: extra items of one type do count (the mix rule), but a short
 //     note explains it whenever a type is over its own target
 //   - pace = round(target total × today's day ÷ days in month), in WIB
+// Update v4 (file 01): targets still count Uploaded only. Done ("waiting for review") and
+// Revision are counted on their own, so the legend, boxes and dots can show them.
 import { daysInMonth, isInMonth, monthStart } from './time.js';
 
 export const TYPES = ['reels', 'feed'];
@@ -23,18 +25,32 @@ export const STATUS_TEXT = {
 };
 
 // ------------------------------------------------------------------ counting
-/** Counts of uploaded / planned / not started items whose publish date is in the month. */
+/**
+ * Counts per status of the items whose publish date is in the month:
+ * uploaded · done (waiting for review) · revision · planned · notStarted.
+ */
 export function countStatuses(items, month) {
-  let uploaded = 0;
-  let planned = 0;
-  let notStarted = 0;
+  const n = { uploaded: 0, done: 0, revision: 0, planned: 0, notStarted: 0 };
   for (const item of items) {
     if (!isInMonth(item.publish_date, month)) continue;
-    if (item.status === 'uploaded') uploaded += 1;
-    else if (item.status === 'planned') planned += 1;
-    else notStarted += 1;
+    switch (item.status) {
+      case 'uploaded':
+        n.uploaded += 1;
+        break;
+      case 'done':
+        n.done += 1;
+        break;
+      case 'revision':
+        n.revision += 1;
+        break;
+      case 'planned':
+        n.planned += 1;
+        break;
+      default:
+        n.notStarted += 1;
+    }
   }
-  return { uploaded, planned, notStarted };
+  return n;
 }
 
 /** Items with no publish date (all of them, whatever the month). */
@@ -193,12 +209,18 @@ export function paceShort(pace) {
   return null;
 }
 
-/** The dot row's aria-label: "7 of 10 uploaded, 2 planned, 1 not started, on pace". */
-export function trackAriaLabel({ uploaded, planned, notStarted, target, pace }) {
+/** The dot row's aria-label: "7 of 10 uploaded, 1 waiting for review, 2 planned, 1 not started, on pace". */
+export function trackAriaLabel({ uploaded, done = 0, revision = 0, planned, notStarted, target, pace }) {
+  const middle = [
+    ...(done ? [`${done} waiting for review`] : []),
+    ...(revision ? [`${revision} in revision`] : []),
+    `${planned} planned`,
+    `${notStarted} not started`,
+  ];
   if (target == null) {
-    return `${uploaded} uploaded, ${planned} planned, ${notStarted} not started, no target set`;
+    return [`${uploaded} uploaded`, ...middle, 'no target set'].join(', ');
   }
-  const parts = [`${uploaded} of ${target} uploaded`, `${planned} planned`, `${notStarted} not started`];
+  const parts = [`${uploaded} of ${target} uploaded`, ...middle];
   if (pace?.phase === 'current' || pace?.phase === 'past') {
     if (pace.reached) parts.push('target reached');
     else if (pace.phase === 'current') parts.push(pace.onPace ? 'on pace' : `${pace.behind} behind pace`);
@@ -209,16 +231,19 @@ export function trackAriaLabel({ uploaded, planned, notStarted, target, pace }) 
 
 /**
  * How the dot row is drawn: one dot per unit of target, in order
- * filled (uploaded) → ring (planned) → empty (remaining); uploads beyond the
- * target continue as "bonus" dots after a small gap.
+ * filled (uploaded) → review (Done, waiting for Admin: amber) → revision (dark-blue ring) →
+ * ring (planned) → empty (remaining); uploads beyond the target continue as "bonus" dots
+ * after a small gap. Only uploads count toward the target; the others just show what's coming.
  */
-export function dotPlan({ target, uploaded, planned }) {
+export function dotPlan({ target, uploaded, review = 0, revision = 0, planned }) {
   const total = Math.max(0, Number(target) || 0);
   const filled = Math.min(uploaded, total);
-  const ring = Math.min(planned, total - filled);
-  const empty = total - filled - ring;
+  const inReview = Math.min(review, total - filled);
+  const inRevision = Math.min(revision, total - filled - inReview);
+  const ring = Math.min(planned, total - filled - inReview - inRevision);
+  const empty = total - filled - inReview - inRevision - ring;
   const bonus = Math.max(0, uploaded - total);
-  return { total, filled, ring, empty, bonus };
+  return { total, filled, review: inReview, revision: inRevision, ring, empty, bonus };
 }
 
 // ------------------------------------------------------------------ groups
@@ -233,12 +258,14 @@ export function groupStats({ items, targetRows, month, today }) {
   const summed = sumTargets(rows);
   const target = summed && summed.total > 0 ? summed : null;
   const uploaded = uploadedByType(items, month);
-  const { planned, notStarted } = countStatuses(items, month);
+  const { done, revision, planned, notStarted } = countStatuses(items, month);
   const t = target?.total ?? null;
   return {
     target,
     targetRows: rows,
     uploaded,
+    done,
+    revision,
     planned,
     notStarted,
     noDate: countNoDate(items),

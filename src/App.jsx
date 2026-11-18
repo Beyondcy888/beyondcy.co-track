@@ -15,6 +15,10 @@ import { PeoplePage } from './admin/PeoplePage.jsx';
 import { TargetsPage } from './admin/TargetsPage.jsx';
 import { ProjectsPage } from './projects/ProjectsPage.jsx';
 import { ProjectsProvider } from './projects/ProjectsProvider.jsx';
+import { ActivityPage } from './activity/ActivityPage.jsx';
+import { MaintenanceProvider } from './maintenance/MaintenanceProvider.jsx';
+import { MaintenanceGate } from './maintenance/MaintenanceGate.jsx';
+import { MaintenanceAdminPage, MaintenancePreview, RequireExempt } from './maintenance/MaintenanceAdminPage.jsx';
 import { ToastProvider } from './ui/Toast.jsx';
 import { ConfirmProvider } from './ui/Confirm.jsx';
 import { PageHeader } from './layout/PageHeader.jsx';
@@ -76,11 +80,25 @@ function NotFound() {
   );
 }
 
+// Maintenance (update v4, file 10) is read before routing: the gate shows the maintenance page
+// on every route while Tracker maintenance is on (except for the Admin Beyondcy account).
+// It lives here, in the shared path, so the dev mock gets it too.
 export function AppRoutes() {
+  return (
+    <MaintenanceProvider>
+      <MaintenanceGate>
+        <RoutesInner />
+      </MaintenanceGate>
+    </MaintenanceProvider>
+  );
+}
+
+function RoutesInner() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/maintenance-preview" element={<MaintenancePreview />} />
       {DevCheck && (
         <Route
           path="/dev-check"
@@ -111,11 +129,27 @@ export function AppRoutes() {
             }
           />
           <Route
+            path="admin/activity"
+            element={
+              <RequireAdmin>
+                <ActivityPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
             path="admin/people"
             element={
               <RequireAdmin>
                 <PeoplePage />
               </RequireAdmin>
+            }
+          />
+          <Route
+            path="admin/maintenance"
+            element={
+              <RequireExempt>
+                <MaintenanceAdminPage />
+              </RequireExempt>
             }
           />
           <Route path="t/:roleId" element={<TrackerRoute />}>

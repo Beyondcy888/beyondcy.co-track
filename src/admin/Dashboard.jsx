@@ -16,7 +16,8 @@ import { Person } from '../people/Avatar.jsx';
 import { PersonSelect } from '../people/PersonSelect.jsx';
 import { useProjects } from '../projects/ProjectsProvider.jsx';
 import { SummaryBoxes } from '../track/SummaryBoxes.jsx';
-import { Spinner, TypeIcon } from '../ui/bits.jsx';
+import { TypeIcon } from '../ui/bits.jsx';
+import { DashboardSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { IconAlert, IconCheck } from '../ui/icons.jsx';
 import { BrandCards } from './BrandCards.jsx';
 import { AchievementCell, SplitCell, StatusChip, TrackerList } from './perf.jsx';
@@ -531,11 +532,7 @@ function DashboardView() {
     <div className="dashboard">
       <PageHeader title="Dashboard" showMonth />
 
-      {t.status === 'loading' && (
-        <div className="loading-block">
-          <Spinner label="Loading the dashboard" /> Loading the dashboard
-        </div>
-      )}
+      {t.status === 'loading' && <DashboardSkeleton month={month} />}
       {t.status === 'error' && (
         <div className="notice notice-danger" role="alert">
           <div>
@@ -548,7 +545,7 @@ function DashboardView() {
       )}
 
       {t.status === 'ready' && (
-        <div className={`dash-body${stale ? ' is-stale' : ''}`} aria-busy={stale}>
+        <div className={`dash-body sk-fade-in${stale ? ' is-stale' : ''}`} aria-busy={stale} aria-label={stale ? 'Loading the month' : undefined}>
           <SummaryBoxes stats={perf.total} month={month} today={today} targetsHref={`/admin/targets?month=${month}`} />
           <BrandCards items={t.items} month={month} />
           <AllBrandsCalendar items={t.items} onOpen={openItem} />

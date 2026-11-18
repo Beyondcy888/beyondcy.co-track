@@ -44,6 +44,9 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # push notifications (update v4, file 06): a public key; until the secret is added the
+          # tracker just shows "Not available here" on the Notifications switch
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
           VITE_BASE_PATH: /beyondcy.co-track/   # remove when the domain is connected (file 11)
       - run: cp dist/index.html dist/404.html   # SPA deep links on GitHub Pages
 

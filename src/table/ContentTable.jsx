@@ -6,7 +6,9 @@ import { useToast } from '../ui/Toast.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { STATUS_LABELS, STATUS_ORDER, TYPE_LABELS } from '../lib/fields.js';
 import { monthName } from '../lib/time.js';
+import { NotesField } from '../notes/NotePictures.jsx';
 import { PersonSelect } from '../people/PersonSelect.jsx';
+import { Popover } from '../ui/Popover.jsx';
 import { buildColumns } from './columns.jsx';
 import { NO_PIC } from './useContentFilters.js';
 import { IconPlus, IconSearch } from '../ui/icons.jsx';
@@ -50,8 +52,22 @@ function HeaderCell({ header }) {
   );
 }
 
+/** The small Notes editor a Notes cell opens (v4, 02 §2), so people don't have to open the drawer. */
+function NotesPopover({ itemId, anchor, onClose }) {
+  const t = useTracker();
+  const item = t.itemsById.get(itemId);
+  if (!item) return null;
+  return (
+    <Popover anchor={anchor} onClose={onClose} label={`Notes for ${item.content || 'Untitled'}`} width={380} className="notes-pop">
+      <p className="popover-title notes-pop-title">{item.content || 'Untitled'}</p>
+      <NotesField item={item} compact autoFocus />
+    </Popover>
+  );
+}
+
 /**
- * The content table (02 §2): month-scoped, filterable, sortable; click a row for the drawer.
+ * The content table (02 §2): the selected month plus items with no date, filterable,
+ * sortable; click a row for the drawer. Text wraps and rows grow (v4, 02 §1).
  * `filters` comes from useContentFilters() on the page: the status board uses the same ones.
  * `items` are the page's items (for the PIC filter's list of people).
  */
@@ -61,6 +77,7 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
   const { month } = useMonth();
   const f = filters;
   const [sorting, setSorting] = useState([{ id: 'publish_date', desc: false }]);
+  const [notesPop, setNotesPop] = useState(null); // { itemId, anchor }
 
   const showPillars = view.brandChoices.some((b) => (t.pillarsByBrand[b.id] ?? []).length > 0);
 
@@ -70,10 +87,11 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
         showBrand: view.showBrand,
         showPic: view.showPic,
         showPillars,
+        isAdmin: t.isAdmin,
         brandName: (id) => t.brandsById[id]?.name ?? id,
         personName: (id) => t.peopleById[id]?.display_name ?? 'Former member',
       }),
-    [view.showBrand, view.showPic, showPillars, t.brandsById, t.peopleById],
+    [view.showBrand, view.showPic, showPillars, t.isAdmin, t.brandsById, t.peopleById],
   );
 
   // PIC filter: photo + name for everyone active in the tracker or named on an item
@@ -103,7 +121,14 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getRowId: (row) => row.id,
-    meta: { onOpen, inlineSave, me: t.me, showPic: view.showPic },
+    meta: {
+      onOpen,
+      inlineSave,
+      me: t.me,
+      isAdmin: t.isAdmin,
+      showPic: view.showPic,
+      onEditNotes: (itemId, anchor) => setNotesPop({ itemId, anchor }),
+    },
   });
 
   const rows = table.getRowModel().rows;
@@ -124,12 +149,6 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
           </button>
         </div>
       );
-    } else if (f.allMonths) {
-      empty = (
-        <div className="empty">
-          <strong>No content yet.</strong>Add the first one with New content.
-        </div>
-      );
     } else {
       empty = (
         <div className="empty">
@@ -144,8 +163,7 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
       <div className="section-head">
         <h2 id="content-title">Content</h2>
         <p className="section-meta">
-          {f.allMonths ? 'All months' : `${monthName(month)}, plus items with no date`} ·{' '}
-          <span className="mono">{rows.length}</span> {rows.length === 1 ? 'item' : 'items'}
+          {monthName(month)}, plus items with no date · <span className="mono">{rows.length}</span> {rows.length === 1 ? 'item' : 'items'}
         </p>
       </div>
 
@@ -195,15 +213,10 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
             Clear filters
           </button>
         )}
-        <label className="switch toolbar-switch">
-          <input type="checkbox" checked={f.allMonths} onChange={(e) => f.setAllMonths(e.target.checked)} />
-          <span className="switch-track" aria-hidden="true" />
-          Show all months
-        </label>
       </div>
 
-      <div className="table-wrap" ref={wrapRef} onScroll={onScroll} data-scrolled={scrolled}>
-        <table className="table" style={{ minWidth: table.getTotalSize() }}>
+      <div className="table-wrap content-table-wrap" ref={wrapRef} onScroll={onScroll} data-scrolled={scrolled}>
+        <table className="table content-table" style={{ minWidth: table.getTotalSize() }}>
           <colgroup>
             {table.getVisibleLeafColumns().map((c) => (
               <col key={c.id} style={{ width: c.getSize() }} />
@@ -222,7 +235,8 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
             {rows.map((row) => (
               <tr
                 key={row.id}
-                className={`row${row.id === openId ? ' is-open' : ''}`}
+                data-id={row.id}
+                className={`row${row.id === openId ? ' is-open' : ''}${row.original.status === 'revision' ? ' is-revision' : ''}`}
                 onClick={() => onOpen(row.id)}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -236,6 +250,7 @@ export function ContentTable({ view, items, filters, onOpen, onCreate, openId })
         </table>
         {empty}
       </div>
+      {notesPop && <NotesPopover itemId={notesPop.itemId} anchor={notesPop.anchor} onClose={() => setNotesPop(null)} />}
     </section>
   );
 }

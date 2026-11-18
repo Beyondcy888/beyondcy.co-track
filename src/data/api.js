@@ -6,23 +6,31 @@
 //     updated_at, updated_by, updated_by_name (items) or role_id, author_* (comments)
 //   - content_targets: never send role_id, target_total, set_by, updated_at (the DB sets them)
 //   - pic_id: staff can't set it (the DB uses them); Admin sends it only where a choice is needed
-//   - banner files live at tracker-banners/<role_id>/<file>
 //   - always use the row the database returns
 // Update v3 (07_DATABASE_V3.md):
 //   - names and photos of everyone come from the `people` view (no emails)
 //   - a photo changes only through set_profile_avatar(); files live at avatars/<profile_id>/<file>
 //   - projects: never send status-derived or name columns (completed_*, created_*, updated_*)
+// Update v4 (09_DATABASE_V4.md):
+//   - never send status; send links / self_posted, and review_state only to trigger a review step
+//   - never read or write instagram_url (kept only so old app versions don't break)
+//   - note pictures live at note-images/<role_id>/<item_id>/<file> (≤ 3 per item, ≤ 2 MB each)
+//   - banners belong to people: user_banners + user-banners/<profile_id>/<file>
+//   - site_maintenance is readable by everyone (even signed out); it changes only through the RPCs
 import { supabase } from '../lib/supabase.js';
 
 const ITEM_SELECT = '*, comments(count)';
 const PERSON_SELECT = 'id, email, display_name, role_id, is_active, created_at';
 const TARGET_SELECT =
   'id, month, role_id, brand_id, profile_id, target_reels, target_feed, target_total, note, set_by, updated_at';
-const BANNER_SELECT = 'role_id, image_path, position_y, updated_by, updated_by_name, updated_at';
-const BANNERS = 'tracker-banners';
+const USER_BANNER_SELECT = 'profile_id, image_path, position_y, updated_at';
+const USER_BANNERS = 'user-banners';
+const NOTE_IMAGES = 'note-images';
+const MAINTENANCE_SELECT = 'site, is_on, starts_at, ends_at, set_by_name, ended_reason, updated_at';
 const PEOPLE_SELECT = 'id, display_name, avatar_path, avatar_updated_at, role_id, role_name, is_admin, is_active';
 const AVATARS = 'avatars';
 const PROJECT_SELECT = '*, project_assignees(profile_id)';
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
 /**
  * Flatten `comments: [{ count }]` into `comment_count`. Rows without the embed
@@ -278,41 +286,79 @@ export const supabaseApi = {
     return { data: data[0], error: null };
   },
 
-  // ------------------------------------------------------------ banners
-  getBanner: (roleId) => supabase.from('tracker_banners').select(BANNER_SELECT).eq('role_id', roleId).maybeSingle(),
+  // ------------------------------------------------------------ Notes pictures (v4, private bucket note-images)
+  /** Signed URLs (1 hour) for many pictures in one request → { data: { [path]: url } }. */
+  async noteImageUrls(paths) {
+    if (!paths.length) return { data: {}, error: null };
+    const { data, error } = await supabase.storage.from(NOTE_IMAGES).createSignedUrls(paths, 3600);
+    if (error) return { data: null, error };
+    const urls = {};
+    for (const row of data ?? []) if (row.signedUrl && !row.error) urls[row.path] = row.signedUrl;
+    return { data: urls, error: null };
+  },
 
-  /** Upload to tracker-banners/<roleId>/<uuid>.<ext>; returns { data: { path } }. */
-  async uploadBannerFile(roleId, blob, ext) {
-    const path = `${roleId}/${newId()}.${ext}`;
+  /** Upload as-is (never compressed: the owner's decision) to note-images/<roleId>/<itemId>/<uuid>.<ext>. */
+  async uploadNoteImage(roleId, itemId, file) {
+    const path = `${roleId}/${itemId}/${newId()}.${EXT[file.type] ?? 'jpg'}`;
     const { error } = await supabase.storage
-      .from(BANNERS)
+      .from(NOTE_IMAGES)
+      .upload(path, file, { contentType: file.type, upsert: false, cacheControl: '3600' });
+    return { data: error ? null : { path }, error };
+  },
+
+  removeNoteImages: (paths) =>
+    paths?.length ? supabase.storage.from(NOTE_IMAGES).remove(paths) : Promise.resolve({ data: [], error: null }),
+
+  // ------------------------------------------------------------ banners (v4: one per person, user_banners)
+  getUserBanner: (profileId) =>
+    supabase.from('user_banners').select(USER_BANNER_SELECT).eq('profile_id', profileId).maybeSingle(),
+
+  /** Upload to user-banners/<profileId>/<uuid>.<ext>; returns { data: { path } }. */
+  async uploadUserBannerFile(profileId, blob, ext) {
+    const path = `${profileId}/${newId()}.${ext}`;
+    const { error } = await supabase.storage
+      .from(USER_BANNERS)
       .upload(path, blob, { contentType: blob.type, upsert: false, cacheControl: '3600' });
     return { data: error ? null : { path }, error };
   },
 
-  saveBanner: ({ roleId, imagePath, positionY = 50 }) =>
+  saveUserBanner: ({ profileId, imagePath, positionY = 50 }) =>
     supabase
-      .from('tracker_banners')
-      .upsert({ role_id: roleId, image_path: imagePath, position_y: positionY }, { onConflict: 'role_id' })
-      .select(BANNER_SELECT)
+      .from('user_banners')
+      .upsert({ profile_id: profileId, image_path: imagePath, position_y: positionY }, { onConflict: 'profile_id' })
+      .select(USER_BANNER_SELECT)
       .single(),
 
-  setBannerPosition: (roleId, positionY) =>
-    supabase.from('tracker_banners').update({ position_y: positionY }).eq('role_id', roleId).select(BANNER_SELECT).single(),
+  setUserBannerPosition: (profileId, positionY) =>
+    supabase.from('user_banners').update({ position_y: positionY }).eq('profile_id', profileId).select(USER_BANNER_SELECT).single(),
 
-  async deleteBanner(roleId) {
-    const { data, error } = await supabase.from('tracker_banners').delete().eq('role_id', roleId).select('role_id');
+  /** Your own banner, or (Admin) anyone's. */
+  async deleteUserBanner(profileId) {
+    const { data, error } = await supabase.from('user_banners').delete().eq('profile_id', profileId).select('profile_id');
     if (error) return { data: null, error };
-    if (!data?.length) return notAllowed("You don't have access to this tracker.");
+    if (!data?.length) return notAllowed("You can't remove this banner.");
     return { data: data[0], error: null };
   },
 
-  removeBannerFile: (path) => supabase.storage.from(BANNERS).remove([path]),
+  removeUserBannerFile: (path) => supabase.storage.from(USER_BANNERS).remove([path]),
 
-  /** A private file's URL for one hour. */
-  async bannerUrl(path) {
-    const { data, error } = await supabase.storage.from(BANNERS).createSignedUrl(path, 3600);
+  /** A private banner file's URL for one hour. */
+  async userBannerUrl(path) {
+    const { data, error } = await supabase.storage.from(USER_BANNERS).createSignedUrl(path, 3600);
     return { data: data?.signedUrl ?? null, error };
+  },
+
+  /** Live banner changes (anyone signed in may read them). onChange(event, row); DELETE rows carry only profile_id. */
+  subscribeUserBanners(onChange) {
+    const channel = supabase
+      .channel(`user-banners-${Math.random().toString(36).slice(2, 8)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_banners' }, (p) =>
+        onChange(p.eventType, p.eventType === 'DELETE' ? p.old : p.new),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 
   // ------------------------------------------------------------ comments
@@ -329,6 +375,45 @@ export const supabaseApi = {
   listHistory: (itemId) =>
     supabase.from('activity_log').select('*').eq('item_id', itemId).order('created_at', { ascending: false }).limit(300),
 
+  /** Activity Logs (v4, file 05): newest first, 100 at a time; `before` = the last row's created_at. */
+  searchActivity: ({ query = null, brand = null, category = null, before = null, limit = 100 } = {}) =>
+    supabase.rpc('search_activity', {
+      p_query: query || null,
+      p_brand: brand || null,
+      p_category: category || null,
+      p_before: before || null,
+      p_limit: limit,
+    }),
+
+  // ------------------------------------------------------------ push notifications (v4, file 06)
+  savePushSubscription: ({ endpoint, p256dh, auth, userAgent = null }) =>
+    supabase.rpc('save_push_subscription', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth, p_user_agent: userAgent }),
+
+  removePushSubscription: (endpoint) => supabase.rpc('remove_push_subscription', { p_endpoint: endpoint }),
+
+  // ------------------------------------------------------------ maintenance (v4, file 10)
+  /** Both rows of site_maintenance ('dashboard', 'tracker'): readable by everyone, even signed out. */
+  getMaintenance: () => supabase.from('site_maintenance').select(MAINTENANCE_SELECT),
+
+  /** Live changes to either row; onChange(row). Returns an unsubscribe function. */
+  subscribeMaintenance(onChange) {
+    const channel = supabase
+      .channel(`maintenance-${Math.random().toString(36).slice(2, 8)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_maintenance' }, (p) =>
+        onChange(p.new && Object.keys(p.new).length ? p.new : p.old),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  /** True only for the Admin Beyondcy account (stored by account id). Signed-in only. */
+  isMaintenanceExempt: () => supabase.rpc('is_maintenance_exempt'),
+  startMaintenance: (site, minutes) => supabase.rpc('start_maintenance', { p_site: site, p_minutes: minutes }),
+  extendMaintenance: (site, minutes) => supabase.rpc('extend_maintenance', { p_site: site, p_minutes: minutes }),
+  endMaintenance: (site) => supabase.rpc('end_maintenance', { p_site: site }),
+
   // ------------------------------------------------------------ people (Admin)
   listPeople: () => supabase.from('profiles').select(PERSON_SELECT).order('display_name'),
   async updatePerson(id, patch) {
@@ -344,7 +429,7 @@ export const supabaseApi = {
    * dashboard). RLS applies, so only rows this person may read arrive. DELETE events can't
    * be filtered (they carry only the primary key), so they are subscribed unfiltered and
    * matched locally.
-   * handlers: { onItem, onComment, onTarget, onBanner (tracker only), onStatus } — each (event, row)
+   * handlers: { onItem, onComment, onTarget, onStatus } — each (event, row)
    * Returns an unsubscribe function.
    */
   subscribeTracker(roleId, handlers) {
@@ -362,7 +447,6 @@ export const supabaseApi = {
     channel
       .on('postgres_changes', spec('comments', 'INSERT'), (p) => handlers.onComment?.('INSERT', p.new))
       .on('postgres_changes', spec('comments', 'DELETE'), (p) => handlers.onComment?.('DELETE', p.old));
-    if (roleId) watch('tracker_banners', handlers.onBanner);
     channel.subscribe((status) => handlers.onStatus?.(status));
     return () => {
       supabase.removeChannel(channel);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
 import { AuthLayout } from './LoginPage.jsx';
-import { Spinner } from '../ui/bits.jsx';
+import { SkeletonBlock, SkeletonLine, SkeletonRegion } from '../components/skeleton/Skeleton.jsx';
 
 const MIN_LENGTH = 8;
 
@@ -37,9 +37,13 @@ export function ResetPasswordPage() {
   let body;
   if (!ready) {
     body = (
-      <div className="auth-form">
-        <Spinner label="Checking your reset link" />
-      </div>
+      <SkeletonRegion label="Checking your reset link" className="auth-form sk-auth">
+        <SkeletonLine width="62%" size="xl" />
+        <SkeletonLine width="86%" size="sm" />
+        <SkeletonBlock height={44} radius={10} />
+        <SkeletonBlock height={44} radius={10} />
+        <SkeletonBlock width={140} height={40} radius={999} />
+      </SkeletonRegion>
     );
   } else if (done) {
     body = (

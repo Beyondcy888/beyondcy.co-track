@@ -3,7 +3,8 @@ import { useTracker } from '../data/TrackerProvider.jsx';
 import { friendlyError } from '../lib/errors.js';
 import { describeActivity } from '../lib/history.js';
 import { Avatar } from '../people/Avatar.jsx';
-import { RelativeTime, Spinner } from '../ui/bits.jsx';
+import { RelativeTime } from '../ui/bits.jsx';
+import { ThreadSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 
 /** activity_log for this item, newest first, with expandable old → new values. */
 export function HistoryTab({ item }) {
@@ -36,11 +37,7 @@ export function HistoryTab({ item }) {
     );
   }
   if (!entries) {
-    return (
-      <div className="loading-block">
-        <Spinner label="Loading history" /> Loading history
-      </div>
-    );
+    return <ThreadSkeleton label="Loading history" />;
   }
   if (!entries.length) return <p className="empty-line">No history yet.</p>;
 

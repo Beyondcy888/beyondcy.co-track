@@ -1,19 +1,22 @@
 // "This week", deadlines and the status board (update v3, files 05 and 06).
 // Pure functions only: no React, no Supabase. Tested in week.test.js.
 //
-// Rules (the owner's, v3):
-//   - a week is Monday–Sunday in WIB; the reminder always covers exactly the current week,
-//     even across a month boundary
-//   - the reminder lists only Not started and Planned content (never Uploaded), plus open
-//     projects due this week; anything still open from before this week is "overdue"
-//   - the status board is display only: three columns by status, sorted by publish date
-import { addDays, dayDiff, formatDayMonth, weekdayIndex, WEEKDAYS_SHORT } from './time.js';
+// Rules (the owner's, v3, changed by v4 files 01 and 03):
+//   - a week is Sunday–Saturday in WIB (v4: it matches the Sunday-first calendars); the
+//     reminder always covers exactly the current week, even across a month boundary
+//   - the reminder lists only unfinished content (Not started, Planned, Revision), plus open
+//     projects due this week; anything still unfinished from before this week is "overdue".
+//     Done is with Admin (waiting for review), so it's not the staff member's job
+//   - the status board is display only: five columns by status, sorted by publish date
+import { isUnfinished, STATUS_ORDER } from './fields.js';
+import { addDays, dayDiff, formatDayMonth, sundayIndex, weekdayIndex, WEEKDAYS_SHORT } from './time.js';
 
-const STATUS_RANK = { not_started: 0, planned: 1, uploaded: 2 };
+// Revision first on a day: Admin asked for changes
+const STATUS_RANK = { revision: 0, not_started: 1, planned: 2, done: 3, uploaded: 4 };
 
-/** Monday–Sunday of the week that contains `today` ('YYYY-MM-DD'). */
+/** Sunday–Saturday of the week that contains `today` ('YYYY-MM-DD'). */
 export function weekRange(today) {
-  const start = addDays(today, -weekdayIndex(today));
+  const start = addDays(today, -sundayIndex(today));
   return { start, end: addDays(start, 6) };
 }
 
@@ -59,14 +62,14 @@ export function deadlineHint(due, today, { popup = false } = {}) {
   return popup ? `overdue by ${days}` : `${days} overdue`;
 }
 
-/** Content still to do: anything that isn't uploaded. */
+/** Content still to do by staff: Not started, Planned or Revision (Done is with Admin). */
 export function isOpenItem(item) {
-  return item.status !== 'uploaded';
+  return isUnfinished(item.status);
 }
 
-/** Dated, the date has passed, and it still isn't uploaded. */
+/** Dated, the date has passed, and it's still unfinished. */
 export function isOverdueItem(item, today) {
-  return Boolean(item.publish_date) && item.publish_date < today && item.status !== 'uploaded';
+  return Boolean(item.publish_date) && item.publish_date < today && isUnfinished(item.status);
 }
 
 export function isOverdueProject(project, today) {
@@ -90,7 +93,8 @@ function byDateThenStatus(a, b) {
  *            (each { kind, id, date, item | project, today, late })
  *   overdue: open content and projects dated before this week
  *   state:   'list' (something to do) · 'done' (the week had work, all finished) · 'empty'
- *   scheduled / finished: what the week held, any status (for "7 of 7 uploaded")
+ *   scheduled / finished: what the week held, any status (for "7 of 7 done")
+ *   inReview: this week's content that is Done, waiting for Admin's review (part of `finished`)
  */
 export function reminder({ items = [], projects = [], today }) {
   const week = weekRange(today);
@@ -98,6 +102,7 @@ export function reminder({ items = [], projects = [], today }) {
   const overdue = [];
   let scheduled = 0;
   let finished = 0;
+  let inReview = 0;
 
   for (const item of items) {
     const date = item.publish_date;
@@ -105,8 +110,10 @@ export function reminder({ items = [], projects = [], today }) {
     const open = isOpenItem(item);
     if (isInWeek(date, week)) {
       scheduled += 1;
-      if (!open) finished += 1;
-      else rows.push({ kind: 'item', id: item.id, date, item, today: date === today, late: date < today });
+      if (!open) {
+        finished += 1;
+        if (item.status === 'done') inReview += 1;
+      } else rows.push({ kind: 'item', id: item.id, date, item, today: date === today, late: date < today });
     } else if (date < week.start && open) {
       overdue.push({ kind: 'item', id: item.id, date, item, today: false, late: true });
     }
@@ -136,6 +143,7 @@ export function reminder({ items = [], projects = [], today }) {
     toGo,
     scheduled,
     finished,
+    inReview,
     next,
     state: toGo > 0 ? 'list' : scheduled > 0 ? 'done' : 'empty',
   };
@@ -154,11 +162,12 @@ export function byPublishDate(a, b) {
 }
 
 /**
- * The status board: one column per status, in the order Not started · Planned · Uploaded.
+ * The status board: one column per status, in the order
+ * Not started · Planned · Done · Revision · Uploaded (v4, file 01).
  * Each column: { key, items, total, reels, feed, untyped }.
  */
 export function boardColumns(items) {
-  const columns = ['not_started', 'planned', 'uploaded'].map((key) => ({ key, items: [], total: 0, reels: 0, feed: 0, untyped: 0 }));
+  const columns = STATUS_ORDER.map((key) => ({ key, items: [], total: 0, reels: 0, feed: 0, untyped: 0 }));
   const byKey = Object.fromEntries(columns.map((c) => [c.key, c]));
   for (const item of items) {
     const col = byKey[item.status] ?? byKey.not_started;

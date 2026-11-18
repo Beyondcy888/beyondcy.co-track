@@ -112,6 +112,13 @@ export function SummaryBoxes({ stats, month, today, targetsHref = null, label = 
             <TypeWord type="feed">
               {fmt(u.feed)}/{t ? fmt(t.feed) : '–'} Feed
             </TypeWord>
+            {/* Done counts only once Admin marks it Uploaded (v4, file 01) */}
+            {stats.done > 0 && (
+              <span className="stat-review" title="Done: waiting for Admin's review. Counts once it's marked Uploaded.">
+                <span className="stat-review-dot" aria-hidden="true" />
+                {fmt(stats.done)} waiting for review
+              </span>
+            )}
           </>
         }
         illus={<IllusPhone />}

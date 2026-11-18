@@ -13,8 +13,11 @@ const BASE = import.meta.env.BASE_URL;
 function BrandCard({ brand, count, period, href }) {
   const style = brandStyle(brand.id);
   const logoUrl = style.logo ? `${BASE}${style.logo}` : null;
+  // the large faint background logo: a wider version where the brand has one (Homy8, v4)
+  const ghostUrl = style.ghost ? `${BASE}${style.ghost}` : logoUrl;
+  const ghostRatio = style.ghost ? style.ghostRatio : style.ratio;
   const shape = style.ratio >= 2.2 ? 'wide' : style.ratio >= 1.35 ? 'mid' : 'compact';
-  const vars = { '--brand': style.glow, '--brand-true': style.color, ...(logoUrl ? { '--logo': `url("${logoUrl}")`, '--logo-ratio': style.ratio } : {}) };
+  const vars = { '--brand': style.glow, '--brand-true': style.color, ...(ghostUrl ? { '--logo': `url("${ghostUrl}")`, '--logo-ratio': ghostRatio } : {}) };
   const body = (
     <>
       <span className="bc-glow" aria-hidden="true" />

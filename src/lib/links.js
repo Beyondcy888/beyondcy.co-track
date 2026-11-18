@@ -58,7 +58,32 @@ export function shortUrl(url) {
     .replace(/\/$/, '');
 }
 
-/** Mirrors the database rule, used only for a friendly early hint. */
-export function isInstagramUrl(value) {
-  return /^https?:\/\/([a-z0-9-]+\.)?instagram\.com\/.+/i.test(String(value || '').trim());
+/**
+ * A link's short label for tight places (the Links column, cards): the domain plus the
+ * start of the path, no query string.
+ *   'https://drive.google.com/file/d/1AbCdEfGh/view?usp=sharing' → 'drive.google.com/file/d/1AbC…'
+ */
+export function shortLink(url, max = 32) {
+  const s = String(url)
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/[?#].*$/, '')
+    .replace(/\/+$/, '');
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+/** Mirrors the database's rule for a link: a web address starting with http:// or https:// (no spaces). */
+export function isWebLink(value) {
+  return /^https?:\/\/\S+$/i.test(String(value ?? '').trim());
+}
+
+/** What the database keeps of a list of links: trimmed, no blanks, no duplicates (order kept). */
+export function cleanLinks(list) {
+  const out = [];
+  for (const raw of list ?? []) {
+    const v = String(raw ?? '').trim();
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
 }

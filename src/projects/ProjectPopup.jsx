@@ -7,7 +7,8 @@ import { useToday } from '../data/useNow.js';
 import { dateOfTimestampWIB, formatDayMonth, formatWeekdayDate } from '../lib/time.js';
 import { deadlineHint } from '../lib/week.js';
 import { Avatar } from '../people/Avatar.jsx';
-import { RelativeTime, Spinner } from '../ui/bits.jsx';
+import { RelativeTime } from '../ui/bits.jsx';
+import { ThreadSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { IconCheck, IconCheckCircle, IconClock, IconFlag, IconHistory, IconPencil, IconTrash, IconUndo, IconX } from '../ui/icons.jsx';
 import { Modal } from '../ui/Modal.jsx';
@@ -66,9 +67,7 @@ function History({ projectId, stamp }) {
   if (error) return <p className="field-error">{error}</p>;
   if (!entries) {
     return (
-      <p className="pp-history-loading">
-        <Spinner label="Loading history" /> Loading history
-      </p>
+      <ThreadSkeleton label="Loading history" />
     );
   }
   if (!entries.length) return <p className="dim">No history yet.</p>;

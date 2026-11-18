@@ -1,6 +1,7 @@
 // DEV ONLY: `npm run mock` → the real UI on fake data, no Supabase.
-// Pick who you are with ?as=admin|excel|dika|zaki|arum|ilyas|anne|rina|bagas|out
+// Pick who you are with ?as=admin|admin2|excel|dika|zaki|arum|ilyas|anne|rina|bagas|out
 // (remembered for the tab). ?bar=0 hides the persona bar (for clean screenshots).
+// "admin" is Admin Beyondcy (maintenance-exempt); "admin2" is a second Admin who is locked out.
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AppRoutes, UiProviders } from '../../App.jsx';
@@ -12,6 +13,7 @@ import '../dev.css';
 
 const PERSONAS = {
   admin: 'u-admin',
+  admin2: 'u-admin2',
   excel: 'u-excel',
   dika: 'u-dika',
   zaki: 'u-zaki',
@@ -43,6 +45,9 @@ function initialPersona() {
   const as = params.get('as');
   if (as && as in PERSONAS) write('mock-as', as);
   if (params.has('bar')) write('mock-bar', params.get('bar'));
+  // ?slow=1500: every mock answer takes that much longer (see the skeleton loading); ?slow=0 turns it off
+  if (params.has('slow')) write('mock-slow', params.get('slow'));
+  globalThis.__mockDelay = Math.min(Number(read('mock-slow', '0')) || 0, 10000);
   return read('mock-as', 'arum');
 }
 

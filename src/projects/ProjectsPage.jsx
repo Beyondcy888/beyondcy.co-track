@@ -7,7 +7,7 @@ import { PageHeader } from '../layout/PageHeader.jsx';
 import { formatWeekdayDate } from '../lib/time.js';
 import { projectBuckets } from '../lib/week.js';
 import { AvatarStack, namesOf } from '../people/Avatar.jsx';
-import { Spinner } from '../ui/bits.jsx';
+import { ListSkeleton } from '../components/skeleton/PageSkeletons.jsx';
 import { useConfirm } from '../ui/Confirm.jsx';
 import { IconCheck, IconFlag, IconPencil, IconPlus, IconTrash, IconUndo } from '../ui/icons.jsx';
 import { useToast } from '../ui/Toast.jsx';
@@ -162,11 +162,7 @@ export function ProjectsPage() {
       </div>
 
       <div id="ptab-panel" role="tabpanel" aria-labelledby={`ptab-${active}`}>
-        {ps.status === 'loading' && (
-          <div className="loading-block">
-            <Spinner label="Loading projects" /> Loading projects
-          </div>
-        )}
+        {ps.status === 'loading' && <ListSkeleton label="Loading projects" />}
         {ps.status === 'error' && (
           <div className="notice notice-danger" role="alert">
             <div>
